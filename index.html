@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZERO → SHIELDED // a playable Zcash onboarding</title>
+  <meta name="description" content="A playable, hands-on journey from zero to your first shielded Zcash transaction. Set up a wallet, get ZEC, shield, send, receive and unshield — and see exactly what the world can and cannot see." />
+  <meta property="og:title" content="ZERO → SHIELDED // a playable Zcash onboarding" />
+  <meta property="og:description" content="From zero to your first shielded transaction. Practice safely, then do it for real." />
+  <meta name="theme-color" content="#e6d7bb" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23141210'/><rect x='3' y='3' width='10' height='2' fill='%23f4b728'/><rect x='9' y='5' width='2' height='2' fill='%23f4b728'/><rect x='7' y='7' width='2' height='2' fill='%23f4b728'/><rect x='5' y='9' width='2' height='2' fill='%23f4b728'/><rect x='3' y='11' width='10' height='2' fill='%23f4b728'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Silkscreen&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ============ MENU BAR ============ -->
+  <header class="menubar" id="menubar">
+    <button class="brand" id="btn-home" aria-label="Back to start">
+      <span class="brand-mark" aria-hidden="true">◆</span> ZERO<span class="arrow">→</span>SHIELDED
+    </button>
+    <nav class="map" id="map" aria-label="Journey progress"></nav>
+    <div class="menu-right">
+      <button class="menu-btn" id="btn-glossary">GLOSSARY</button>
+      <button class="menu-btn" id="btn-reset" title="Restart the journey">RESET</button>
+      <span class="clock" id="clock">00:00</span>
+    </div>
+  </header>
+
+  <!-- ============ MAIN LAYOUT ============ -->
+  <main class="layout" id="layout">
+    <section class="stage" id="stage" aria-live="polite"></section>
+
+    <aside class="rail" id="rail">
+      <!-- YOUR VIEW : simulated wallet -->
+      <div class="window device" id="device">
+        <div class="win-title"><span>▣ YOUR VIEW</span><span class="win-sub" id="wallet-name">NO WALLET</span></div>
+        <div class="device-body">
+          <div class="bal-total">
+            <div class="label">TOTAL BALANCE</div>
+            <div class="big" id="bal-total">0.0000 <small>ZEC</small></div>
+          </div>
+          <div class="bal-split">
+            <div class="bal-cell shielded">
+              <div class="label">🛡 SHIELDED</div>
+              <div class="val" id="bal-s">0.0000</div>
+            </div>
+            <div class="bal-cell transparent">
+              <div class="label">◌ TRANSPARENT</div>
+              <div class="val" id="bal-t">0.0000</div>
+            </div>
+          </div>
+          <div class="hint" id="device-hint">Create a wallet to begin.</div>
+          <div class="mini-label">ACTIVITY · ONLY YOU SEE THIS</div>
+          <ul class="activity" id="activity"><li class="empty">— nothing yet —</li></ul>
+        </div>
+      </div>
+
+      <!-- WORLD VIEW : public chain -->
+      <div class="window chain" id="chain">
+        <div class="win-title dark"><span>◉ WHAT THE WORLD SEES</span><span class="win-sub" id="block-height">BLOCK —</span></div>
+        <div class="chain-body">
+          <ul class="ledger" id="ledger"><li class="empty">The public chain. Anyone, anywhere, forever.</li></ul>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============ GLOSSARY ============ -->
+  <dialog class="modal" id="glossary">
+    <div class="win-title"><span>📖 GLOSSARY</span><button class="x" id="glossary-close" aria-label="Close glossary">✕</button></div>
+    <div class="modal-body" id="glossary-body"></div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <footer class="foot">
+    <span>ZERO→SHIELDED is a simulation. No real keys, coins or network. Nothing leaves your browser.</span>
+    <span>Built for <a href="https://thezecathon.com" target="_blank" rel="noopener">ZECATHON</a> // 05 WILDCARD</span>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="avatar.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
