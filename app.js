@@ -570,10 +570,24 @@
               <div class="row"><span>Paid from</span><span>t1Yx…9fQa</span></div>
               <div class="row"><b>STATUS</b><b>PAID ✓</b></div>
             </div>
-            <div class="toggle-row">
-              <button class="btn sm" id="peek-btn">👁 Be the barista: look up t1Yx…</button>
+
+            <div class="action-steps-flow" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+              <div class="flow-step" id="flow-step-1">
+                <div class="flow-tag" style="font-family:var(--f-pixel);font-size:10px;color:#8b8172;margin-bottom:4px;">STEP 1 · THE PUBLIC LEAK</div>
+                <button class="btn sm" id="peek-btn" style="width:100%;justify-content:center;">👁 1. Be the barista: look up t1Yx…</button>
+              </div>
+              
+              <div class="flow-arrow" id="flow-arrow" style="text-align:center;color:var(--gold);font-family:var(--f-pixel);font-size:11px;opacity:0.4;transition:all .3s;">↓ STEP 2 ↓</div>
+
+              <div class="flow-step" id="flow-step-2">
+                <div class="flow-tag" style="font-family:var(--f-pixel);font-size:10px;color:#8b8172;margin-bottom:4px;">STEP 2 · ZERO-KNOWLEDGE SHIELD</div>
+                <button class="btn gold sm" id="shield-demo" disabled style="width:100%;justify-content:center;">🛡 2. Now pay shielded</button>
+              </div>
+
+              <div id="flow-next-container" class="hidden" style="margin-top:10px;">
+                <button class="btn gold sm" id="why-inline-next" style="width:100%;justify-content:center;background:var(--gold);color:#000;font-weight:700;">Proceed to Chapter 02: Wallet Setup →</button>
+              </div>
             </div>
-            <div class="toggle-row"><button class="btn gold sm" id="shield-demo" disabled>🛡 Now pay shielded</button></div>
           </div>
           <div class="glass-col dark">
             <div class="label" style="color:#8b8172" id="glass-label">WHAT THE BARISTA CAN NOW SEE</div>
@@ -595,24 +609,47 @@
       </div>`,
       bind() {
         let peeked = false;
-        setTargetPulse("#peek-btn");
+        if (!S.done.why) setTargetPulse("#peek-btn");
+        else {
+          $("#peek-btn").classList.add("done");
+          $("#peek-btn").textContent = "✓ 1. Public Trace Revealed";
+          $("#shield-demo").disabled = false;
+          $("#shield-demo").classList.add("done");
+          $("#shield-demo").textContent = "✓ 2. Encrypted with zk-SNARK";
+          $("#flow-next-container")?.classList.remove("hidden");
+        }
+
         $("#peek-btn").addEventListener("click", () => {
           $("#leaks").classList.add("revealed");
           $$("#leaks li").forEach((li, i) => (li.style.transitionDelay = i * 120 + "ms"));
-          peeked = true; $("#shield-demo").disabled = false;
+          peeked = true;
+          $("#shield-demo").disabled = false;
           playSfx("hit");
+          $("#peek-btn").textContent = "✓ 1. Public Trace Revealed";
+          $("#peek-btn").style.opacity = "0.75";
+          $("#flow-arrow").style.opacity = "1";
+          $("#flow-arrow").style.transform = "scale(1.15)";
+          $("#flow-arrow").innerHTML = "👇 <b>NEXT STEP</b> 👇";
           setTargetPulse("#shield-demo");
-          $("#why-guidance").innerHTML = guidanceHUD(steps, 1, "Now click 'Now pay shielded' to encrypt your transaction.");
+          $("#why-guidance").innerHTML = guidanceHUD(steps, 1, "Now click '2. Now pay shielded' to encrypt your transaction.");
         });
+
         $("#shield-demo").addEventListener("click", () => {
-          if (!peeked) return;
+          if (!peeked && !S.done.why) return;
           playSfx("shield");
           $("#leaks").classList.add("shielded");
           $("#glass-label").textContent = "WHAT THE BARISTA SEES WITH SHIELDED ZEC";
           $("#glass-note").innerHTML = `<span style="color:var(--gold)">They know one thing: <b style="background:none">they got paid 0.05 ZEC.</b> Nothing else.</span>`;
-          $("#why-guidance").innerHTML = guidanceHUD(steps, 2, "Mission complete! Click 'Next chapter →' below.");
+          $("#shield-demo").textContent = "✓ 2. Encrypted with zk-SNARK";
+          $("#flow-arrow").innerHTML = "✓ ENCRYPTION COMPLETE";
+          $("#flow-arrow").style.color = "var(--green)";
+          $("#flow-next-container")?.classList.remove("hidden");
+          setTargetPulse("#why-inline-next");
+          $("#why-guidance").innerHTML = guidanceHUD(steps, 2, "Mission complete! Click 'Proceed to Chapter 02' below.");
           complete("why", "🛡 That's the whole idea. Let's get you a wallet.");
         });
+
+        $("#why-inline-next")?.addEventListener("click", () => go(2));
       }
     };
   };
