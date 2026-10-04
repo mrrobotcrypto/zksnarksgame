@@ -785,14 +785,14 @@ textarea { resize: vertical; min-height: 70px; }
 }
 .wm-address-val .wm-pfx { color: var(--gold); font-weight: 700; }
 
-/* QR code placeholder */
+/* QR code in wallet modal */
 .wm-qr {
   width: 100px; height: 100px; float: right; margin: 0 0 8px 12px;
-  background: #fff; display: grid; grid-template-columns: repeat(10,1fr); gap: 1px; padding: 6px;
+  background: #fff; display: block;
   border: 3px solid var(--ink); flex-shrink: 0;
+  image-rendering: pixelated;
+  box-shadow: 3px 3px 0 var(--gold);
 }
-.wm-qr-cell { background: var(--ink); }
-.wm-qr-cell.light { background: transparent; }
 .wm-clearfix::after { content: ""; display: table; clear: both; }
 
 /* Send form */

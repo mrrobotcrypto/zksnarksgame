@@ -2802,14 +2802,34 @@
      ============================================================ */
   const walletModal = $("#modal-wallet");
 
-  function buildQR(seed) {
-    const h = seed.split("").reduce((a, c) => (Math.imul(31, a) + c.charCodeAt(0)) >>> 0, 0);
-    let cells = "";
-    for (let i = 0; i < 100; i++) {
-      const bit = ((h * (i + 1) * 2654435761) >>> 0) & 1;
-      cells += `<div class="wm-qr-cell ${bit ? "" : "light"}"></div>`;
+  function renderWalletQR(canvas, addr) {
+    if (!canvas) return;
+    if (window.ZAvatar && typeof window.ZAvatar.drawPseudoQR === "function") {
+      window.ZAvatar.drawPseudoQR(canvas, addr);
+    } else {
+      const M = 29, s = 6;
+      canvas.width = M * s; canvas.height = M * s;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, M * s, M * s);
+      ctx.fillStyle = "#141210";
+      let h = addr.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
+      for (let y = 0; y < M; y++) {
+        for (let x = 0; x < M; x++) {
+          h = Math.imul(h ^ (x * 31 + y * 17), 1103515245) + 12345;
+          if ((h & 7) > 3) ctx.fillRect(x * s, y * s, s, s);
+        }
+      }
+      const box = (bx, by) => {
+        ctx.fillStyle = "#141210"; ctx.fillRect(bx * s, by * s, 7 * s, 7 * s);
+        ctx.fillStyle = "#fff"; ctx.fillRect((bx + 1) * s, (by + 1) * s, 5 * s, 5 * s);
+        ctx.fillStyle = "#141210"; ctx.fillRect((bx + 2) * s, (by + 2) * s, 3 * s, 3 * s);
+      };
+      box(0, 0); box(M - 7, 0); box(0, M - 7);
+      ctx.fillStyle = "#f4b728"; ctx.fillRect(12 * s, 12 * s, 5 * s, 5 * s);
+      ctx.fillStyle = "#141210"; ctx.fillRect(13 * s, 13 * s, 3 * s, 1 * s);
+      ctx.fillRect(14 * s, 14 * s, 1 * s, 1 * s); ctx.fillRect(13 * s, 15 * s, 3 * s, 1 * s);
     }
-    return `<div class="wm-qr" aria-hidden="true">${cells}</div>`;
   }
 
   function openWalletModal(defaultTab = "receive") {
@@ -2849,7 +2869,7 @@
           <button class="wm-addr-btn" id="btn-show-t">👁 Transparent (t1...)</button>
         </div>
         <div class="wm-address-block">
-          <div id="wm-qr-wrap">${buildQR(uaAddr)}</div>
+          <div id="wm-qr-wrap"><canvas class="wm-qr" id="wm-qr-canvas" width="174" height="174"></canvas></div>
           <div style="font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px;" id="wm-addr-title">UNIFIED ADDRESS (Z-POOL)</div>
           <div style="font-family:var(--f-mono);font-size:10px;color:#fff;word-break:break-all;line-height:1.5;margin-bottom:10px;" id="wm-addr-val">${uaAddr}</div>
           <button class="btn sm gold" id="btn-copy-addr" style="font-size:11px;">📋 Copy Address</button>
@@ -2959,6 +2979,8 @@
     const qrWrap = body.querySelector("#wm-qr-wrap");
     const addrTitle = body.querySelector("#wm-addr-title");
     const addrVal = body.querySelector("#wm-addr-val");
+    const qrCanvas = body.querySelector("#wm-qr-canvas");
+    renderWalletQR(qrCanvas, uaAddr);
 
     if (btnUa && btnT) {
       btnUa.addEventListener("click", () => {
@@ -2968,7 +2990,7 @@
         addrTitle.textContent = "UNIFIED ADDRESS (Z-POOL)";
         addrTitle.style.color = "var(--gold)";
         addrVal.textContent = uaAddr;
-        qrWrap.innerHTML = buildQR(uaAddr);
+        renderWalletQR(body.querySelector("#wm-qr-canvas"), uaAddr);
       });
       btnT.addEventListener("click", () => {
         playSfx("tab");
@@ -2977,7 +2999,7 @@
         addrTitle.textContent = "TRANSPARENT ADDRESS (T-POOL)";
         addrTitle.style.color = "var(--red)";
         addrVal.textContent = tAddr;
-        qrWrap.innerHTML = buildQR(tAddr);
+        renderWalletQR(body.querySelector("#wm-qr-canvas"), tAddr);
       });
     }
 
