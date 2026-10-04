@@ -1576,7 +1576,7 @@
         const text = `I just went from zero to my first shielded transaction in ${time} with ZERO→SHIELDED 🛡\n\nWallet setup, getting ZEC, shielding, send/receive, unshielding — all playable.\n\n@zksnarks_ #ZECATHON $ZEC`;
         $("#share").href = "https://x.com/intent/tweet?text=" + encodeURIComponent(text) + (location.protocol.startsWith("http") ? "&url=" + encodeURIComponent(location.origin + location.pathname) : "");
 
-        $("#restart").addEventListener("click", reset);
+        $("#restart").addEventListener("click", showResetModal);
         $("#checklist").addEventListener("click", (e) => {
           const li = e.target.closest("li"); if (!li) return;
           const i = li.dataset.i; S.checklist[i] = !S.checklist[i]; li.classList.toggle("on"); save();
