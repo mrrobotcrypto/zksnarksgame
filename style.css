@@ -104,9 +104,31 @@ button { font: inherit; color: inherit; cursor: pointer; background: none; borde
 }
 .win-title.gold { background: var(--gold); color: var(--ink); }
 .win-sub { color: var(--gold); }
-.win-title.gold .win-sub { color: var(--ink); }
-.x { color: var(--paper); font-size: 14px; padding: 0 4px; }
-.x:hover { color: var(--gold); }
+.x {
+  color: var(--paper);
+  font-size: 16px;
+  padding: 2px 8px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: all .15s ease;
+}
+.x:hover {
+  color: var(--gold);
+  background: rgba(0,0,0,0.15);
+}
+.win-title.gold .x {
+  color: var(--ink);
+}
+.win-title.gold .x:hover {
+  background: rgba(0,0,0,0.12);
+  color: #000;
+}
 
 /* device */
 .device-body { padding: 14px; }
@@ -556,22 +578,28 @@ textarea { resize: vertical; min-height: 70px; }
 
 /* ---------------- SHIELDED WALLET MODAL ---------------- */
 .wallet-modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   max-width: 580px;
-  width: 95vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
+  width: 92vw;
+  max-height: 85vh;
+  border: 2px solid var(--ink);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6), 8px 8px 0 var(--gold);
+  background: var(--paper);
+  padding: 0;
+  overflow: hidden;
+  z-index: 1000;
 }
-.wallet-modal[open] {
-  display: flex;
+.wallet-modal::backdrop {
+  background: rgba(15, 14, 12, 0.75);
+  backdrop-filter: blur(3px);
 }
 #modal-wallet-body {
   padding: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: calc(90vh - 44px);
-  display: flex;
-  flex-direction: column;
+  max-height: calc(85vh - 42px);
 }
 
 /* Tab strip */

@@ -2902,10 +2902,39 @@
 
 
   $("#btn-open-wallet-modal")?.addEventListener("click", () => openWalletModal("receive"));
-  $("#modal-wallet-close")?.addEventListener("click", () => walletModal?.close());
-  $("#modal-wallet")?.addEventListener("click", (e) => { if (e.target.id === "modal-wallet") walletModal?.close(); });
+  
+  function closeWalletModal() {
+    if (walletModal) {
+      if (typeof walletModal.close === "function") {
+        walletModal.close();
+      } else {
+        walletModal.removeAttribute("open");
+      }
+    }
+  }
+
+  $("#modal-wallet-close")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    playSfx("click");
+    closeWalletModal();
+  });
+
+  $("#modal-wallet")?.addEventListener("click", (e) => {
+    // Click on backdrop outside the modal dialog box
+    const rect = walletModal.getBoundingClientRect();
+    const isInDialog = (
+      rect.top <= e.clientY && e.clientY <= rect.bottom &&
+      rect.left <= e.clientX && e.clientX <= rect.right
+    );
+    if (!isInDialog || e.target.id === "modal-wallet") {
+      closeWalletModal();
+    }
+  });
 
   window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && walletModal && walletModal.open) {
+      closeWalletModal();
+    }
     if (AutoPilot.active && e.key === "Escape") AutoPilot.stop("Manual takeover via Escape");
   });
 
