@@ -105,9 +105,38 @@
   const genT = () => "t1" + rnd(33, B58);
   const genZs = () => "zs1" + rnd(75, B32);
 
+  /* ---------- TOAST QUEUE SYSTEM ---------- */
+  const _toastStack = [];
+  let _toastBusy = false;
   function toast(msg, ms = 2800) {
-    const t = $("#toast"); t.innerHTML = msg; t.classList.add("show");
-    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), ms);
+    _toastStack.push({ msg, ms });
+    if (!_toastBusy) _nextToast();
+  }
+  function _nextToast() {
+    if (!_toastStack.length) { _toastBusy = false; return; }
+    _toastBusy = true;
+    const { msg, ms } = _toastStack.shift();
+    let wrap = $("#toast-stack");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "toast-stack";
+      wrap.className = "toast-stack";
+      document.body.appendChild(wrap);
+    }
+    const el = document.createElement("div");
+    el.className = "toast-item";
+    el.innerHTML = msg;
+    wrap.appendChild(el);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => el.classList.add("visible"));
+    });
+    setTimeout(() => {
+      el.classList.add("fading");
+      setTimeout(() => {
+        el.remove();
+        _nextToast();
+      }, 320);
+    }, ms);
   }
   function scramble(el, finalText, ms = 900) {
     const chars = "▓▒░█▚▞#%&@$01";
@@ -198,14 +227,35 @@
     addTx({ kind, from: genT(), to: genT(), amt, mine: false });
   }
 
+  /* ---------- ANIMATED BALANCE COUNTER ---------- */
+  function animateBalance(el, fromVal, toVal, ms = 600) {
+    if (!el) return;
+    const start = performance.now();
+    const diff = toVal - fromVal;
+    el.classList.add("bal-counting");
+    (function tick(now) {
+      const p = Math.min(1, (now - start) / ms);
+      const eased = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+      el.textContent = fmt(fromVal + diff * eased);
+      if (p < 1) requestAnimationFrame(tick);
+      else { el.textContent = fmt(toVal); el.classList.remove("bal-counting"); }
+    })(start);
+  }
+
   /* ---------------- RAIL RENDER ---------------- */
   function renderRail(newId) {
     $("#wallet-name").textContent = S.wallet ? (D.wallets.find((w) => w.id === S.wallet)?.name || "WALLET").toUpperCase() + " · SIM" : "NO WALLET";
-    const prevS = $("#bal-s").textContent, prevT = $("#bal-t").textContent;
+    const prevSText = $("#bal-s").textContent;
+    const prevTText = $("#bal-t").textContent;
+    const prevS = parseFloat(prevSText) || 0;
+    const prevT = parseFloat(prevTText) || 0;
     $("#bal-total").innerHTML = `${fmt(S.t + S.s)} <small>ZEC</small>`;
-    $("#bal-s").textContent = fmt(S.s); $("#bal-t").textContent = fmt(S.t);
-    if (prevS !== fmt(S.s)) pulse(".bal-cell.shielded");
-    if (prevT !== fmt(S.t)) pulse(".bal-cell.transparent");
+    if (prevSText !== fmt(S.s)) animateBalance($("#bal-s"), prevS, S.s);
+    else $("#bal-s").textContent = fmt(S.s);
+    if (prevTText !== fmt(S.t)) animateBalance($("#bal-t"), prevT, S.t);
+    else $("#bal-t").textContent = fmt(S.t);
+    if (prevSText !== fmt(S.s)) pulse(".bal-cell.shielded");
+    if (prevTText !== fmt(S.t)) pulse(".bal-cell.transparent");
 
     let hint = "Create a wallet to begin.";
     if (S.wallet && S.t + S.s === 0) hint = "Wallet ready. Balance: zero. Let's fix that.";
@@ -362,13 +412,105 @@
       <button class="map-node ${i === S.ch ? "active" : ""} ${S.done[c.id] ? "done" : ""}" data-go="${i}" ${i > S.maxCh ? "disabled" : ""}>${c.short}</button>`).join("");
   }
   $("#map").addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b && !b.disabled) go(+b.dataset.go); });
+
+  /* ---------- CHAPTER PROGRESS BAR ---------- */
+  function updateProgressBar() {
+    let bar = $("#chapter-progress-bar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "chapter-progress-bar";
+      bar.className = "chapter-progress-bar";
+      document.body.insertBefore(bar, document.body.firstChild);
+    }
+    const pct = D.chapters.length > 1 ? (S.ch / (D.chapters.length - 1)) * 100 : 0;
+    bar.style.width = pct + "%";
+    /* Update progress label in menubar if present */
+    const lbl = $("#ch-progress-lbl");
+    if (lbl) lbl.textContent = `${S.ch + 1} / ${D.chapters.length}`;
+  }
+
+  /* ---------- TYPEWRITER REVEAL ---------- */
+  function typewriterReveal(el, text, ms = 1200, onDone) {
+    if (!el) return;
+    el.classList.add("typewriter-text");
+    el.textContent = "";
+    const chars = text.split("");
+    const delay = ms / chars.length;
+    let i = 0;
+    const t = setInterval(() => {
+      el.textContent += chars[i++];
+      if (i >= chars.length) {
+        clearInterval(t);
+        el.classList.add("done");
+        if (onDone) onDone();
+      }
+    }, Math.max(12, delay));
+  }
+
+  /* ---------- CONFETTI BURST ---------- */
+  function confettiBurst(durationMs = 2500) {
+    const canvas = document.createElement("canvas");
+    canvas.className = "confetti-canvas";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx2 = canvas.getContext("2d");
+    const colors = ["#f4b728", "#ffe47a", "#c98f0a", "#fff", "#00ff88", "#2f6b3a"];
+    const pieces = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * 80,
+      r: Math.random() * 7 + 3,
+      d: Math.random() * 3 + 1,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * 10 - 5,
+      tiltSpeed: Math.random() * 0.1 + 0.03,
+      spin: 0
+    }));
+    const end = performance.now() + durationMs;
+    (function frame(now) {
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.y += p.d; p.spin += p.tiltSpeed; p.tilt = Math.sin(p.spin) * 12;
+        ctx2.save();
+        ctx2.translate(p.x + p.r, p.y + p.r);
+        ctx2.rotate(p.tilt * Math.PI / 180);
+        ctx2.fillStyle = p.color;
+        ctx2.globalAlpha = now < end ? 1 : Math.max(0, (end + 600 - now) / 600);
+        ctx2.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx2.restore();
+        if (p.y > canvas.height) { p.y = -20; p.x = Math.random() * canvas.width; }
+      });
+      if (now < end + 600) requestAnimationFrame(frame);
+      else canvas.remove();
+    })(performance.now());
+  }
+
   function go(i) {
     if (AutoPilot.active && !AutoPilot._internal) {
       AutoPilot.stop("Manual navigation detected");
     }
-    S.ch = Math.max(0, Math.min(D.chapters.length - 1, i));
-    S.maxCh = Math.max(S.maxCh, S.ch);
-    save(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
+    const stage = $("#stage");
+    const doGo = () => {
+      S.ch = Math.max(0, Math.min(D.chapters.length - 1, i));
+      S.maxCh = Math.max(S.maxCh, S.ch);
+      save();
+      render();
+      updateProgressBar();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    if (stage && !AutoPilot._internal) {
+      stage.classList.add("fade-out");
+      setTimeout(() => {
+        stage.classList.remove("fade-out");
+        doGo();
+        requestAnimationFrame(() => {
+          stage.classList.add("fade-in");
+          setTimeout(() => stage.classList.remove("fade-in"), 300);
+        });
+      }, 190);
+    } else {
+      doGo();
+    }
   }
   function complete(id, msg) {
     if (!S.done[id]) { S.done[id] = true; save(); if (msg) toast(msg); }
@@ -980,7 +1122,7 @@
 
         <div class="grid-2">
           <div class="panel"><div class="win-title gold"><span>🛡 UNIFIED ADDRESS</span><span class="win-sub">SHARE THIS ONE</span></div><div class="panel-body">
-            <div class="addr-box"><span class="pfx">u1</span>${S.ua.slice(2)}</div>
+            <div class="addr-box"><span class="pfx">u1</span><span id="ua-typewriter">${S.ua.slice(2)}</span></div>
             <p class="small mt">Starts with <b>u1</b>. Bundles receivers for the shielded pools (Orchard / Sapling), and the sender's wallet picks the most private one it supports. This is your default.</p>
             <div class="actions" style="margin-top:10px"><button class="copy" data-copy="ua">COPY</button></div>
           </div></div>
@@ -1004,7 +1146,16 @@
       </div>`,
       bind() {
         if (!allDone) setTargetPulse("#classify");
-        $$(".copy").forEach((b) => b.addEventListener("click", () => {
+        /* Typewriter reveal for unified address (only if not already done) */
+        const uaEl = $("#ua-typewriter");
+        if (uaEl && !allDone) {
+          const fullText = S.ua.slice(2);
+          uaEl.textContent = "";
+          typewriterReveal(uaEl, fullText, Math.min(1600, fullText.length * 18), () => {
+            playSfx("shield");
+          });
+        }
+        $$("[data-copy]").forEach((b) => b.addEventListener("click", () => {
           const v = b.dataset.copy === "ua" ? S.ua : S.taddr;
           navigator.clipboard?.writeText(v).catch(() => {});
           playSfx("coin");
@@ -1589,6 +1740,13 @@
         });
 
         complete("grad");
+        /* Graduation confetti if first time */
+        if (!S.done._gradCelebrated) {
+          S.done._gradCelebrated = true;
+          save();
+          setTimeout(() => confettiBurst(3000), 400);
+          setTimeout(() => toast("🎓 Congratulations! You are now SHIELDED.", 4000), 500);
+        }
       }
     };
   };
@@ -1958,7 +2116,8 @@
           const dt = Math.min(40, now - lastTime) / 16.666;
           lastTime = now;
 
-          if (running && !gameOver) {
+          const isModalOpen = Boolean(walletModal && (walletModal.open || walletModal.hasAttribute("open")));
+          if (running && !gameOver && !isModalOpen) {
             update(dt);
           }
           renderGame();
@@ -2239,17 +2398,40 @@
           running = false;
           screenShake = 12;
           playSfx("gameover");
-          if (score > (S.gameHighScore || 0)) {
+          const isNewRecord = score > (S.gameHighScore || 0);
+          if (isNewRecord) {
             S.gameHighScore = score;
             localStorage.setItem("zero_shielded_high_score", String(score));
+            save();
           }
           $("#g-over-title").textContent = "DE-ANONYMIZED!";
           $("#g-over-desc").textContent = "Surveillance spotted your node! Claim your earned privacy reward to withdraw it into your shielded wallet.";
           $("#g-controls-help")?.classList.add("hidden");
           $("#g-over-stats")?.classList.remove("hidden");
-          if ($("#gos-score")) $("#gos-score").textContent = fmt(score) + " ZEC";
+
+          /* Score reveal with animation */
+          const gosScore = $("#gos-score");
+          if (gosScore) {
+            gosScore.textContent = fmt(score) + " ZEC";
+            gosScore.classList.remove("animate-in");
+            void gosScore.offsetWidth;
+            gosScore.classList.add("animate-in");
+          }
           if ($("#gos-drones")) $("#gos-drones").textContent = dronesDestroyed;
-          if ($("#gos-high")) $("#gos-high").textContent = fmt(S.gameHighScore) + " ZEC";
+
+          /* High score display + new record flash */
+          const gosHigh = $("#gos-high");
+          if (gosHigh) {
+            gosHigh.textContent = fmt(S.gameHighScore) + " ZEC";
+            if (isNewRecord) {
+              gosHigh.classList.remove("new-record-flash");
+              void gosHigh.offsetWidth;
+              gosHigh.classList.add("new-record-flash");
+              setTimeout(() => toast("🏆 NEW HIGH SCORE! " + fmt(score) + " ZEC — incredible run!", 4000), 600);
+              confettiBurst(2500);
+            }
+          }
+
           $("#g-start-btn").textContent = "PLAY AGAIN ↻";
           $("#g-overlay").classList.remove("hidden");
 
@@ -2579,7 +2761,7 @@
     const view = CH[id]();
     $("#stage").innerHTML = view.html;
     view.bind && view.bind();
-    bindNav(); renderMap(); renderRail();
+    bindNav(); renderMap(); renderRail(); updateProgressBar();
     document.title = (S.ch ? D.chapters[S.ch].title + " · " : "") + "ZERO → SHIELDED";
   }
   const resetModal = $("#modal-reset");
@@ -2686,16 +2868,23 @@
         </div>
         <div class="wm-form">
           <div class="wm-field">
+            <label>Presets / Quick Select</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn ghost sm wm-send-preset" data-to="u1peer999xshieldednode2026zecathonmempoolzk" data-memo="Payment for node service #ZECATHON">Peer Shielded Node</button>
+              <button type="button" class="btn ghost sm wm-send-preset" data-to="zs1zcashdevfoundationgrantprojectq4community" data-memo="Donation to Zcash Community Grant">Zcash Community Grant</button>
+            </div>
+          </div>
+          <div class="wm-field">
             <label>Recipient Address (z-address or u1...)</label>
-            <input type="text" id="wm-send-to" placeholder="u1... or zs1..." value="u1peer999xshieldednode2026zecathonmempoolzk">
+            <input type="text" id="wm-send-to" placeholder="u1... or zs1..." value="">
           </div>
           <div class="wm-field">
             <label>Amount (ZEC) · Available: ${sZec} ZEC</label>
-            <input type="number" id="wm-send-amt" placeholder="0.1" step="0.01" min="0.0001" max="${S.s}" value="${safeSendAmt || 0.1}">
+            <input type="number" id="wm-send-amt" placeholder="e.g. 0.1000" step="0.01" min="0.0001" max="${S.s}" value="">
           </div>
           <div class="wm-field">
             <label>Encrypted Memo (Optional, 512 bytes)</label>
-            <input type="text" id="wm-send-memo" placeholder="Thanks for running the shielded node!" value="Payment for node service #ZECATHON">
+            <input type="text" id="wm-send-memo" placeholder="Encrypted private memo (optional)..." value="">
           </div>
           <div id="wm-send-review-box" style="display:none;" class="wm-review"></div>
           <div class="actions" style="margin-top:12px;">
@@ -2724,11 +2913,11 @@
           </div>
           <div class="wm-field">
             <label>Withdraw to Transparent Address (t1...)</label>
-            <input type="text" id="wm-withdraw-to" placeholder="t1..." value="${tAddr}">
+            <input type="text" id="wm-withdraw-to" placeholder="t1... (public transparent address)" value="">
           </div>
           <div class="wm-field">
             <label>Amount to Withdraw (ZEC) · Shielded Balance: ${sZec} ZEC</label>
-            <input type="number" id="wm-withdraw-amt" placeholder="0.25" step="0.01" min="0.0001" max="${S.s}" value="${safeWithdrawAmt || 0.1}">
+            <input type="number" id="wm-withdraw-amt" placeholder="e.g. 0.0500" step="0.01" min="0.0001" max="${S.s}" value="">
           </div>
           <div id="wm-withdraw-review-box" style="display:none;" class="wm-review warn"></div>
           <div class="actions" style="margin-top:14px;margin-bottom:8px;">
@@ -2804,6 +2993,17 @@
         playSfx("click");
         const inp = body.querySelector("#wm-withdraw-to");
         if (inp) inp.value = btn.dataset.to;
+      });
+    });
+
+    // Send Presets
+    body.querySelectorAll(".wm-send-preset").forEach(btn => {
+      btn.addEventListener("click", () => {
+        playSfx("click");
+        const inpTo = body.querySelector("#wm-send-to");
+        const inpMemo = body.querySelector("#wm-send-memo");
+        if (inpTo) inpTo.value = btn.dataset.to || "";
+        if (inpMemo && btn.dataset.memo) inpMemo.value = btn.dataset.memo;
       });
     });
 
