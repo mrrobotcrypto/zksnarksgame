@@ -2729,7 +2729,7 @@
             <input type="number" id="wm-withdraw-amt" placeholder="0.25" step="0.01" min="0.0001" max="${S.s}" value="0.25">
           </div>
           <div id="wm-withdraw-review-box" style="display:none;" class="wm-review warn"></div>
-          <div class="actions" style="margin-top:12px;">
+          <div class="actions" style="margin-top:14px;margin-bottom:8px;">
             <button class="btn" id="wm-btn-withdraw" style="width:100%;justify-content:center;background:var(--red);color:#fff;border-color:var(--red);">↗ CONFIRM WITHDRAWAL</button>
           </div>
         </div>
@@ -2825,13 +2825,16 @@
           playSfx("click");
           sendReviewBox.style.display = "block";
           sendReviewBox.innerHTML = `
-            <div style="font-weight:700;margin-bottom:6px;color:var(--gold);">REVIEW SHIELDED TRANSFER:</div>
-            <div><strong>To:</strong> <span style="font-family:var(--f-mono);font-size:11px;">${short(to, 16)}</span></div>
-            <div><strong>Amount:</strong> ${amt.toFixed(4)} ZEC (+ 0.0001 fee)</div>
-            ${memo ? `<div><strong>Memo:</strong> 💬 ${memo}</div>` : ""}
+            <div style="font-weight:700;margin-bottom:6px;color:var(--gold);font-size:12px;">REVIEW SHIELDED TRANSFER:</div>
+            <div style="margin-bottom:3px;"><strong>To:</strong> <span style="font-family:var(--f-mono);font-size:11px;">${short(to, 16)}</span></div>
+            <div style="margin-bottom:4px;"><strong>Amount:</strong> ${amt.toFixed(4)} ZEC (+ 0.0001 miner fee)</div>
+            ${memo ? `<div style="margin-bottom:4px;"><strong>Memo:</strong> 💬 ${memo}</div>` : ""}
             <div style="margin-top:6px;font-size:11px;color:#a89f91;">Click below again to broadcast the zk-SNARK transaction to the network.</div>
           `;
           btnSend.textContent = "⚡ BROADCAST SHIELDED TRANSACTION";
+          setTimeout(() => {
+            sendReviewBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }, 50);
           return;
         }
 
@@ -2867,14 +2870,17 @@
           playSfx("alarm");
           withdrawReviewBox.style.display = "block";
           withdrawReviewBox.innerHTML = `
-            <div style="font-weight:700;margin-bottom:6px;color:var(--red);">⚠️ CONFIRM UNSHIELDING / WITHDRAWAL:</div>
-            <div><strong>Destination:</strong> <span style="font-family:var(--f-mono);font-size:11px;">${to}</span></div>
-            <div><strong>Withdrawing:</strong> ${amt.toFixed(4)} ZEC (+ 0.0001 miner fee)</div>
-            <div style="margin-top:6px;font-size:11px;color:#ff8e8e;line-height:1.4;">
-              Notice: This moves funds from your shielded pool to a public address. The Mempool scanner will detect this public balance.
+            <div style="font-weight:700;margin-bottom:6px;color:var(--red);font-size:12px;">⚠️ CONFIRM UNSHIELDING / WITHDRAWAL:</div>
+            <div style="margin-bottom:3px;"><strong>Destination:</strong> <span style="font-family:var(--f-mono);font-size:11px;color:#ff8e8e;">${to}</span></div>
+            <div style="margin-bottom:4px;"><strong>Withdrawing:</strong> ${amt.toFixed(4)} ZEC (+ 0.0001 miner fee)</div>
+            <div style="margin-top:6px;font-size:11px;color:#ffcaca;line-height:1.4;background:rgba(200,64,42,0.2);padding:6px 8px;border-left:2px solid var(--red);">
+              Notice: Funds exit the shielded pool into the public blockchain. Destination address and amount become public knowledge.
             </div>
           `;
-          btnWithdraw.textContent = "⚠️ CONFIRM & BROADCAST UNSHIELD TX";
+          btnWithdraw.textContent = "⚠️ BROADCAST UNSHIELD TX NOW";
+          setTimeout(() => {
+            withdrawReviewBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }, 50);
           return;
         }
 

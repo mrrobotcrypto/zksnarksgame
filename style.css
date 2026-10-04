@@ -555,8 +555,24 @@ textarea { resize: vertical; min-height: 70px; }
 }
 
 /* ---------------- SHIELDED WALLET MODAL ---------------- */
-.wallet-modal { max-width: 560px; }
-.wm-body { padding: 0; }
+.wallet-modal {
+  max-width: 580px;
+  width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.wallet-modal[open] {
+  display: flex;
+}
+#modal-wallet-body {
+  padding: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(90vh - 44px);
+  display: flex;
+  flex-direction: column;
+}
 
 /* Tab strip */
 .wm-tabs { display: flex; border-bottom: 2px solid var(--ink); }
@@ -657,15 +673,24 @@ textarea { resize: vertical; min-height: 70px; }
 .wm-privacy-bar.public .wm-privacy-dot { background: var(--red); box-shadow: 0 0 6px var(--red); animation: dangerBlink 1s infinite; }
 @keyframes dangerBlink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
 
-/* Send confirmation */
+/* Send & Withdraw confirmation */
 .wm-review {
-  background: var(--paper-2); border: 2px solid var(--ink); padding: 12px 14px;
-  font-size: 13px; display: none;
+  background: var(--night);
+  border: 2px solid var(--gold);
+  color: var(--paper);
+  padding: 14px 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  border-radius: 2px;
+  margin-top: 10px;
 }
-.wm-review.show { display: block; }
-.wm-review .wm-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--paper-3); }
+.wm-review.warn {
+  border-color: var(--red);
+  background: #1a0f0d;
+}
+.wm-review .wm-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--night-line); }
 .wm-review .wm-row:last-child { border-bottom: 0; }
-.wm-review .wm-row .wm-key { color: var(--ink-soft); font-size: 11px; }
+.wm-review .wm-row .wm-key { color: #a89f91; font-size: 11px; }
 .wm-success {
   text-align: center; padding: 20px; display: none;
 }
