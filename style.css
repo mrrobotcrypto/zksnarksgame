@@ -541,7 +541,7 @@ textarea { resize: vertical; min-height: 70px; }
 .modal-body { padding: 18px; overflow: auto; max-height: calc(82vh - 40px); }
 .gloss dt { font-family: var(--f-poster); font-size: 20px; letter-spacing: .03em; margin-top: 14px; }
 .gloss dd { font-size: 14px; }
-.toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 140%); background: var(--ink); color: var(--paper); padding: 12px 18px; border: 2px solid var(--gold); font-size: 13px; z-index: 200; transition: transform .35s var(--ease); max-width: 90vw; box-shadow: 4px 4px 0 var(--gold); }
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 140%); background: var(--ink); color: var(--paper); padding: 12px 18px; border: 2px solid var(--gold); font-size: 13px; z-index: 99999; transition: transform .35s var(--ease); max-width: 90vw; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 4px 4px 0 var(--gold); pointer-events: none; }
 .toast.show { transform: translate(-50%, 0); }
 
 /* ---------------- RAIL WALLET ACTIONS ---------------- */

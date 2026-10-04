@@ -2640,6 +2640,8 @@
     const tZec = S.t.toFixed(4);
     const uaAddr = S.ua || "u1sampleunifiedaddressfakekey8943729847192847192847192847";
     const tAddr = S.taddr || "t1sampletransparentaddressfakekey8943729847";
+    const safeSendAmt = S.s > 0.001 ? Math.min(0.1, +(S.s * 0.5).toFixed(4)) : 0;
+    const safeWithdrawAmt = S.s > 0.001 ? Math.min(0.05, +(S.s * 0.25).toFixed(4)) : 0;
 
     body.innerHTML = `
       <div class="wm-balance-hero">
@@ -2689,7 +2691,7 @@
           </div>
           <div class="wm-field">
             <label>Amount (ZEC) · Available: ${sZec} ZEC</label>
-            <input type="number" id="wm-send-amt" placeholder="0.1" step="0.01" min="0.0001" max="${S.s}" value="0.5">
+            <input type="number" id="wm-send-amt" placeholder="0.1" step="0.01" min="0.0001" max="${S.s}" value="${safeSendAmt || 0.1}">
           </div>
           <div class="wm-field">
             <label>Encrypted Memo (Optional, 512 bytes)</label>
@@ -2726,7 +2728,7 @@
           </div>
           <div class="wm-field">
             <label>Amount to Withdraw (ZEC) · Shielded Balance: ${sZec} ZEC</label>
-            <input type="number" id="wm-withdraw-amt" placeholder="0.25" step="0.01" min="0.0001" max="${S.s}" value="0.25">
+            <input type="number" id="wm-withdraw-amt" placeholder="0.25" step="0.01" min="0.0001" max="${S.s}" value="${safeWithdrawAmt || 0.1}">
           </div>
           <div id="wm-withdraw-review-box" style="display:none;" class="wm-review warn"></div>
           <div class="actions" style="margin-top:14px;margin-bottom:8px;">
