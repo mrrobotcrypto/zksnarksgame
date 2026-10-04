@@ -263,6 +263,9 @@
   }
   $("#map").addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b && !b.disabled) go(+b.dataset.go); });
   function go(i) {
+    if (AutoPilot.active && !AutoPilot._internal) {
+      AutoPilot.stop("Manual navigation detected");
+    }
     S.ch = Math.max(0, Math.min(D.chapters.length - 1, i));
     S.maxCh = Math.max(S.maxCh, S.ch);
     save(); render(); window.scrollTo({ top: 0, behavior: "smooth" });
@@ -292,6 +295,195 @@
   const kicker = (n, label) => `<div class="kicker"><span class="num">${n}</span><span>${label}</span></div>`;
   const real = (title, inner) => `<details class="real"><summary>▶ DO IT FOR REAL — ${title}</summary><div class="real-body">${inner}</div></details>`;
 
+  /* ---------------- AUTO-PILOT & QUICK LAUNCH SYSTEM ---------------- */
+  function quickJumpToArcade() {
+    AutoPilot.stop();
+    if (!S.handle) S.handle = "CYPHER_RUNNER";
+    if (!S.wallet) S.wallet = "zodl";
+    if (!S.seed || !S.seed.length) S.seed = D.bip39Seed.slice();
+    if (!S.ua) S.ua = "u1" + rnd(139, B32);
+    if (!S.taddr) S.taddr = "t1" + rnd(33, B58);
+    S.t = 0;
+    S.s = 1.25;
+    S.shieldedTotal = 1.25;
+    S.txCount = Math.max(S.txCount, 4);
+    D.chapters.forEach((c) => { S.done[c.id] = true; });
+    S.maxCh = D.chapters.length - 1;
+    save();
+    playSfx("shield");
+    toast("🎮 Jumped directly to Shield Runner Arcade!");
+    const gameIdx = D.chapters.findIndex((c) => c.id === "game");
+    go(gameIdx >= 0 ? gameIdx : 9);
+  }
+
+  const AutoPilot = {
+    active: false,
+    _internal: false,
+
+    start() {
+      if (this.active) return;
+      this.active = true;
+      this.showBanner();
+      playSfx("shield");
+      toast("⚡ Auto-Pilot started! Autonomous tour running...", 3000);
+      this.run();
+    },
+
+    stop(reason) {
+      if (!this.active) return;
+      this.active = false;
+      this.hideBanner();
+      if (reason) toast("✋ " + reason, 2200);
+    },
+
+    showBanner() {
+      let b = $("#autopilot-banner");
+      if (!b) {
+        b = document.createElement("div");
+        b.id = "autopilot-banner";
+        b.className = "autopilot-banner";
+        b.innerHTML = `
+          <span class="autopilot-text">⚡ <b>AUTO-PILOT ACTIVE:</b> Autonomous walkthrough running</span>
+          <button id="autopilot-stop-btn">✕ Take Manual Control</button>
+        `;
+        document.body.appendChild(b);
+        $("#autopilot-stop-btn")?.addEventListener("click", () => AutoPilot.stop("Manual control restored"));
+      }
+      b.style.display = "flex";
+    },
+
+    hideBanner() {
+      const b = $("#autopilot-banner");
+      if (b) b.style.display = "none";
+    },
+
+    async run() {
+      const stepWait = async (ms) => {
+        if (!this.active) return false;
+        await sleep(ms);
+        return this.active;
+      };
+
+      const autoGo = (idx) => {
+        this._internal = true;
+        go(idx);
+        this._internal = false;
+      };
+
+      // 00 — INTRO
+      autoGo(0);
+      if (!S.handle) S.handle = "CYPHER_RUNNER";
+      const hInp = $("#handle");
+      if (hInp) hInp.value = S.handle;
+      if (!await stepWait(1400)) return;
+      complete("intro");
+      playSfx("coin");
+
+      // 01 — WHY PRIVACY (GLASS HOUSE)
+      autoGo(1);
+      if (!await stepWait(1300)) return;
+      const peekBtn = $("#peek-btn");
+      if (peekBtn) peekBtn.click();
+      if (!await stepWait(1400)) return;
+      const shieldDemoBtn = $("#shield-demo");
+      if (shieldDemoBtn) shieldDemoBtn.click();
+      if (!await stepWait(1500)) return;
+      complete("why");
+
+      // 02 — WALLET SETUP
+      autoGo(2);
+      if (!await stepWait(1300)) return;
+      const zodl = $("[data-w='zodl']");
+      if (zodl) zodl.click();
+      if (!await stepWait(1300)) return;
+      const cover = $("#seed-cover");
+      if (cover) {
+        cover.style.opacity = "0";
+        $("#seed-grid")?.classList.remove("blurred");
+      }
+      const wroteCb = $("#wrote");
+      if (wroteCb) { wroteCb.checked = true; wroteCb.dispatchEvent(new Event("change")); }
+      if (!await stepWait(1500)) return;
+      const phishAns = $("[data-a='2']", $("#phish"));
+      if (phishAns) phishAns.click();
+      if (!await stepWait(1600)) return;
+      complete("wallet");
+
+      // 03 — ADDRESS ANATOMY
+      autoGo(3);
+      if (!await stepWait(1400)) return;
+      $$("#classify .classify-row").forEach((row) => {
+        const it = D.addresses ? D.addresses[+row.dataset.i] : null;
+        if (it) {
+          const btn = $(`[data-v="${it.ans}"]`, row);
+          btn?.click();
+        }
+      });
+      if (!await stepWait(1500)) return;
+      complete("address");
+      playSfx("shield");
+
+      // 04 — GETTING ZEC
+      autoGo(4);
+      if (!await stepWait(1300)) return;
+      $("#buy-btn")?.click();
+      if (!await stepWait(1000)) return;
+      $("#paste-t")?.click();
+      if (!await stepWait(1000)) return;
+      $("#wd-btn")?.click();
+      if (!await stepWait(2800)) return;
+      complete("get");
+
+      // 05 — SHIELDING
+      autoGo(5);
+      if (!await stepWait(1300)) return;
+      $("#shield-btn")?.click();
+      if (!await stepWait(2400)) return;
+      complete("shield");
+
+      // 06 — SEND & RECEIVE
+      autoGo(6);
+      if (!await stepWait(1300)) return;
+      $("#recv-btn")?.click();
+      if (!await stepWait(1800)) return;
+      $("#review-btn")?.click();
+      if (!await stepWait(1200)) return;
+      const amt = 0.05;
+      S.s = +(S.s - amt - FEE).toFixed(8);
+      addTx({ kind: "shielded", amt, mine: true });
+      addActivity({ icon: "⬆", label: "To Café Nym (shielded)", amt: amt + FEE, dir: "out", memo: "One flat white, please ☕" });
+      complete("send");
+      if (!await stepWait(1600)) return;
+
+      // 07 — UNSHIELDING
+      autoGo(7);
+      if (!await stepWait(1300)) return;
+      const unRight = $("[data-a='2']", $("#unq"));
+      if (unRight) unRight.click();
+      if (!await stepWait(1200)) return;
+      const unAmt = 0.5;
+      S.s = +(S.s - unAmt - FEE).toFixed(8);
+      addTx({ kind: "unshield", to: "t1SimExDepositSafe" + rnd(10, B58), amt: unAmt, mine: true });
+      addActivity({ icon: "↗", label: "Unshielded to SimEx", amt: unAmt + FEE, dir: "out" });
+      complete("unshield");
+      if (!await stepWait(1600)) return;
+
+      // 08 — GRADUATION
+      autoGo(8);
+      if (!await stepWait(2200)) return;
+      complete("grad");
+      toast("🎓 Graduation complete! Launching Shield Runner arcade...", 2800);
+      if (!await stepWait(2200)) return;
+
+      // 09 — LAUNCH ARCADE GAME
+      this.stop();
+      const gameIdx = D.chapters.findIndex((c) => c.id === "game");
+      autoGo(gameIdx >= 0 ? gameIdx : 9);
+      playSfx("shield");
+      toast("🎮 Welcome to SHIELD RUNNER! Arrow keys / Touch to play!", 4000);
+    }
+  };
+
   /* ---------------- CHAPTERS ---------------- */
   const CH = {};
 
@@ -299,7 +491,7 @@
   CH.intro = () => {
     const steps = [
       "Enter your cypherpunk handle below",
-      "Click 'Begin →' to start your journey"
+      "Click 'Start Interactive Journey →' or pick Auto-Pilot"
     ];
     return {
       html: `<div class="chapter hero">
@@ -315,8 +507,14 @@
           <div class="panel-body">
             <div class="field"><label for="handle">PICK A HANDLE (FOR YOUR CERTIFICATE & AVATAR)</label>
             <input type="text" id="handle" maxlength="24" placeholder="e.g. anon_cypherpunk" value="${esc(S.handle)}" autocomplete="off" /></div>
-            <div class="actions" style="margin-top:6px"><button class="btn xl" id="begin-btn">Begin →</button>
-            ${S.maxCh > 0 ? `<button class="btn ghost sm" id="resume-btn">Resume chapter ${S.maxCh}</button>` : ""}</div>
+            <div class="actions" style="margin-top:6px">
+              <button class="btn xl gold" id="begin-btn">Start Interactive Journey →</button>
+              ${S.maxCh > 0 ? `<button class="btn ghost sm" id="resume-btn">Resume chapter ${S.maxCh}</button>` : ""}
+            </div>
+            <div class="quick-launch-grid">
+              <button class="btn ghost sm" id="btn-autopilot" title="Sit back and watch the autonomous onboarding walkthrough">⚡ Auto-Pilot Demo (40s)</button>
+              <button class="btn sm" id="btn-quick-game" style="background:#141210;color:var(--gold);border:1px solid var(--gold)" title="Jump directly to the Shield Runner arcade game">🎮 Quick Play Arcade →</button>
+            </div>
           </div></div>
         <div class="chapter-list">
           ${D.chapters.slice(1, -1).map((c, i) => `<div class="chapter-card"><div class="n">${String(i + 1).padStart(2, "0")}</div><div class="t">${c.title.toUpperCase()}</div></div>`).join("")}
@@ -338,6 +536,8 @@
         btn.addEventListener("click", start);
         inp.addEventListener("keydown", (e) => e.key === "Enter" && start());
         $("#resume-btn")?.addEventListener("click", () => go(S.maxCh));
+        $("#btn-autopilot")?.addEventListener("click", () => AutoPilot.start());
+        $("#btn-quick-game")?.addEventListener("click", () => quickJumpToArcade());
       }
     };
   };
@@ -1929,17 +2129,23 @@
     document.title = (S.ch ? D.chapters[S.ch].title + " · " : "") + "ZERO → SHIELDED";
   }
   function reset() {
+    AutoPilot.stop();
     if (!confirm("Restart the journey? Your simulated wallet will be wiped.")) return;
     localStorage.removeItem(KEY); S = fresh(); render();
   }
 
-  /* glossary */
+  /* glossary & nav */
   $("#glossary-body").innerHTML = `<dl class="gloss">${D.glossary.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join("")}</dl>`;
   $("#btn-glossary").addEventListener("click", () => $("#glossary").showModal());
   $("#glossary-close").addEventListener("click", () => $("#glossary").close());
   $("#glossary").addEventListener("click", (e) => { if (e.target.id === "glossary") $("#glossary").close(); });
-  $("#btn-home").addEventListener("click", () => go(0));
+  $("#btn-home").addEventListener("click", () => { AutoPilot.stop(); go(0); });
   $("#btn-reset").addEventListener("click", reset);
+  $("#btn-quick-game-nav")?.addEventListener("click", () => quickJumpToArcade());
+
+  window.addEventListener("keydown", (e) => {
+    if (AutoPilot.active && e.key === "Escape") AutoPilot.stop("Manual takeover via Escape");
+  });
 
   /* clock = elapsed journey time */
   setInterval(() => {
