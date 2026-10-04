@@ -65,10 +65,18 @@
         </div>
       </div>
 
-      <!-- WORLD VIEW : public chain -->
-      <div class="window chain" id="chain">
-        <div class="win-title dark"><span>◉ WHAT THE WORLD SEES</span><span class="win-sub" id="block-height">BLOCK —</span></div>
+      <!-- WORLD VIEW : public chain (ZECATHON CRT TERMINAL) -->
+      <div class="window chain zecathon-terminal" id="chain">
+        <div class="win-title dark terminal-title">
+          <span class="terminal-node"><span class="node-dot"></span>WHAT THE WORLD SEES</span>
+          <span class="win-sub" id="block-height">BLOCK —</span>
+        </div>
+        <div class="terminal-scanlines" aria-hidden="true"></div>
         <div class="chain-body">
+          <div class="terminal-banner">
+            <span class="tb-left"><span class="terminal-dot"></span> NODE 07 // LIVE MEMPOOL FEED</span>
+            <span class="tb-right" title="Click any transaction in this ledger to open the Röntgen Inspector">🔍 CLICK TX TO INSPECT</span>
+          </div>
           <ul class="ledger" id="ledger"><li class="empty">The public chain. Anyone, anywhere, forever.</li></ul>
         </div>
       </div>
@@ -79,6 +87,16 @@
   <dialog class="modal" id="glossary">
     <div class="win-title"><span>📖 GLOSSARY</span><button class="x" id="glossary-close" aria-label="Close glossary">✕</button></div>
     <div class="modal-body" id="glossary-body"></div>
+  </dialog>
+
+  <!-- ============ ZECATHON CRT TRANSACTION INSPECTOR MODAL ============ -->
+  <dialog class="modal zecathon-modal" id="modal-tx">
+    <div class="win-title dark terminal-title">
+      <span class="terminal-node"><span class="node-dot"></span> NODE 07 // MEMPOOL RÖNTGEN TERMINAL</span>
+      <button class="x" id="modal-tx-close" aria-label="Close inspector">✕</button>
+    </div>
+    <div class="terminal-scanlines" aria-hidden="true"></div>
+    <div class="modal-body terminal-body" id="modal-tx-body"></div>
   </dialog>
 
   <!-- ============ RESET CONFIRMATION MODAL ============ -->
@@ -99,7 +117,7 @@
 
   <footer class="foot">
     <span>ZERO→SHIELDED is a simulation. No real keys, coins or network. Nothing leaves your browser.</span>
-    <span>Built for <a href="https://thezecathon.com" target="_blank" rel="noopener">ZECATHON</a> // 05 WILDCARD</span>
+    <span>Built for <a href="https://thezecathon.com" target="_blank" rel="noopener" class="zecathon-footer-link"><span class="node-dot mini"></span> ZECATHON</a> // 05 WILDCARD (@zksnarks presents)</span>
   </footer>
 
   <script src="data.js"></script>

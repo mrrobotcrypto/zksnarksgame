@@ -241,19 +241,119 @@
   }
   const row = (k, v, cls) => `<div class="tx-row"><span class="k">${k}</span><span class="v ${cls}">${esc(v)}</span></div>`;
 
-  // Trace shielded tx click
+  // ZECATHON CRT Transaction Inspector / Röntgen Terminal
+  function openTxInspector(txId) {
+    const tx = S.ledger.find((t) => t.id === txId) || S.ledger[0];
+    if (!tx) return;
+    const modal = $("#modal-tx");
+    const body = $("#modal-tx-body");
+    if (!modal || !body) return;
+
+    const isShielded = tx.kind === "shielded";
+    const isPublic = tx.kind === "public";
+    const isShield = tx.kind === "shield";
+    const isUnshield = tx.kind === "unshield";
+
+    let tagClass = "tag-shielded";
+    let tagText = "🛡️ 100% ZERO-KNOWLEDGE PROOF ENCRYPTED";
+    if (isPublic) {
+      tagClass = "tag-public";
+      tagText = "⚠️ SURVEILLANCE LEAK DETECTED (TRANSPARENT)";
+    } else if (isShield) {
+      tagClass = "tag-public";
+      tagText = "◐ ENTERING SHIELDED POOL (t → z)";
+    } else if (isUnshield) {
+      tagClass = "tag-public";
+      tagText = "◐ EXITING SHIELDED POOL (z → t)";
+    }
+
+    body.innerHTML = `
+      <div class="terminal-meta-box">
+        <div><span style="color:#52996e">TXID:</span> <b style="color:#00ff88">${esc(tx.id)}</b></div>
+        <div><span style="color:#52996e">BLOCK:</span> #${tx.h.toLocaleString("en-US")}</div>
+        <div class="tx-tag ${tagClass}">${tagText}</div>
+      </div>
+
+      <div class="terminal-grid">
+        <div class="terminal-card ${isPublic ? "leak" : "shield"}">
+          <h4>${isPublic ? "🚨 SENSOR SURVEILLANCE FEED" : "👁️ EXTERNAL NODE 07 OBSERVATION"}</h4>
+          <p>
+            ${isPublic
+              ? `<b>CRITICAL PRIVACY LEAK:</b> Node 07 sensors recorded plaintext UTXO activity. Sender (<code>${esc(short(tx.from, 14))}</code>) and recipient (<code>${esc(short(tx.to, 14))}</code>) are permanently exposed on the public blockchain. Anyone can track all transactions forward and backward forever.`
+              : isShield
+              ? `<b>PARTIAL EXPOSURE:</b> Funds transferred from transparent address <code>${esc(short(tx.from, 14))}</code> into the shielded pool. Entry amount (${fmt(tx.amt)} ZEC) is logged by Node 07, but recipient destination is encrypted.`
+              : isUnshield
+              ? `<b>PARTIAL EXPOSURE:</b> Funds exited shielded pool to transparent address <code>${esc(short(tx.to, 14))}</code>. Withdrawal amount (${fmt(tx.amt)} ZEC) and recipient are cleartext, but origin note remains zero-knowledge shielded.`
+              : `<b>ZERO SURVEILLANCE DATA:</b> Node 07 detects only mathematical proof execution. Sender, receiver, amount, and encrypted memo contain <b>0 bytes of plaintext</b>. Computationally indistinguishable from random white noise.`
+            }
+          </p>
+        </div>
+
+        <div class="terminal-card shield">
+          <h4>🛡️ ZERO-KNOWLEDGE PROOF ENGINE</h4>
+          <p>
+            ${isPublic
+              ? `<b>NO PROOF SYSTEM:</b> Transparent transactions do not generate zk-SNARKs. They rely on standard Bitcoin-style ECDSA signatures, leaking balances, graph topology, and spending habits.`
+              : `<b>HALO 2 / PLONK VERIFIED:</b> Validated via recursive zero-knowledge proofs on Pasta curves without a trusted setup. Mathematical constraints guarantee zero inflation, valid note ownership, and authorized spend without disclosing identity.`
+            }
+          </p>
+        </div>
+      </div>
+
+      <table class="terminal-table">
+        <thead>
+          <tr>
+            <th>CRYPTOGRAPHIC PARAMETER</th>
+            <th>WHAT SURVEILLANCE NODE 07 SEES</th>
+            <th>ZERO-KNOWLEDGE REALITY</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="field-name">SENDER IDENTITY</td>
+            <td class="${isPublic || isShield ? "val-leak" : "val-zk"}">${isPublic || isShield ? esc(short(tx.from, 16)) : "[ENCRYPTED NULLIFIER HASH]"}</td>
+            <td class="val-zk">${isShielded ? "Derived from Spend Authorizing Key (Secret)" : (isShield ? "Transparent t-address exposed" : "Plaintext exposed")}</td>
+          </tr>
+          <tr>
+            <td class="field-name">RECIPIENT DESTINATION</td>
+            <td class="${isPublic || isUnshield ? "val-leak" : "val-zk"}">${isPublic || isUnshield ? esc(short(tx.to, 16)) : "[NOTE COMMITMENT (cm)]"}</td>
+            <td class="val-zk">${isShielded ? "Diversified Shielded Receiver (Orchard/Sapling)" : "Public destination"}</td>
+          </tr>
+          <tr>
+            <td class="field-name">AMOUNT TRANSFERRED</td>
+            <td class="${isShielded ? "val-zk" : "val-leak"}">${isShielded ? "[PEDERSEN VALUE COMMITMENT]" : fmt(tx.amt) + " ZEC"}</td>
+            <td class="val-zk">${isShielded ? "Homomorphic Commitment: cv = v·G + r·H" : "Plaintext value broadcast to all nodes"}</td>
+          </tr>
+          <tr>
+            <td class="field-name">ENCRYPTED MEMO</td>
+            <td class="${tx.note ? "val-leak" : "val-zk"}">${tx.note ? `"${esc(tx.note)}"` : (isShielded ? "[512-BYTE CIPHERTEXT PAYLOAD]" : "None")}</td>
+            <td class="val-zk">${isShielded ? "ChaCha20-Poly1305 (Decryptable only via IVK)" : (tx.note ? "Public cleartext" : "N/A")}</td>
+          </tr>
+          <tr>
+            <td class="field-name">VERIFICATION CIRCUIT</td>
+            <td class="val-zk">${isPublic ? "None (Standard Script)" : "Halo 2 / UltraPLONK"}</td>
+            <td class="val-zk">${isPublic ? "0% Privacy (Surveillance Open)" : "100% Zero-Knowledge Verified"}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="display:flex;justify-content:center;margin-top:14px;">
+        <button class="btn-zecathon-scanline" id="modal-tx-btn-close">✕ CLOSE TERMINAL INSPECTOR</button>
+      </div>
+    `;
+
+    playSfx(isShielded ? "shield" : "coin");
+    modal.showModal();
+    $("#modal-tx-btn-close")?.addEventListener("click", () => modal.close());
+  }
+
+  $("#modal-tx-close")?.addEventListener("click", () => $("#modal-tx")?.close());
+  $("#modal-tx")?.addEventListener("click", (e) => { if (e.target === $("#modal-tx")) $("#modal-tx").close(); });
+
+  // Open transaction inspector when clicking any tx in ledger
   $("#ledger").addEventListener("click", (e) => {
     const li = e.target.closest(".tx"); if (!li) return;
-    if (li.dataset.kind === "shielded") {
-      $$(".redact", li).forEach((r) => { r.style.color = "var(--gold)"; scramble(r, r.textContent, 600); setTimeout(() => (r.style.color = ""), 900); });
-      playSfx("shield");
-      toast("🔒 Trying to decrypt… <b>impossible</b>. Without a viewing key this is indistinguishable noise.");
-    } else if (li.dataset.kind === "public") {
-      playSfx("hit");
-      toast("👁 Fully public. Anyone can follow these addresses forward and backward — forever.");
-    } else {
-      toast("◐ Half-visible: the transparent side leaks, the shielded side stays dark.");
-    }
+    openTxInspector(li.dataset.id);
   });
 
   /* ---------------- MAP / NAV ---------------- */
@@ -795,12 +895,23 @@
           }).join("");
           $$("#verify .opt").forEach((b) => b.addEventListener("click", () => {
             const q = b.closest(".verify-q"); if (q.dataset.ok) return;
+            const siblings = $$(".opt", q);
             if (S.seed[+b.dataset.n] === b.dataset.w) {
-              b.classList.add("right"); q.dataset.ok = 1; right++;
+              siblings.forEach((s) => s.classList.remove("wrong"));
+              b.classList.add("right");
+              b.textContent = "✓ " + b.dataset.w;
+              q.dataset.ok = "1";
+              right++;
+              siblings.forEach((s) => {
+                if (s !== b) {
+                  s.style.opacity = "0.35";
+                  s.style.pointerEvents = "none";
+                }
+              });
               playSfx("coin");
               if (right === 3) {
                 sub.verified = true; save();
-                toast("✓ Seed verified. One final security check below!");
+                toast("✓ Seed verified! One final security check below!");
                 $("#step-phish").classList.remove("hidden");
                 $("#wallet-guidance").innerHTML = guidanceHUD(steps, 4, "A fake support account messaged you. What do you do?");
                 $("#step-phish").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -809,6 +920,10 @@
             } else {
               playSfx("hit");
               b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
+              toast(`⚠️ That's not word #${+b.dataset.n + 1}. Check your seed list!`);
+              setTimeout(() => {
+                b.classList.remove("wrong");
+              }, 650);
             }
           }));
         }
@@ -890,13 +1005,27 @@
           const b = e.target.closest(".opt"); if (!b) return;
           const rowEl = b.closest(".classify-row"), it = items[+rowEl.dataset.i];
           if (it.got) return;
+          const siblings = $$(".opt", rowEl);
           if (b.dataset.v === it.ans) {
-            b.classList.add("right"); it.got = true; save();
+            siblings.forEach((s) => s.classList.remove("wrong"));
+            b.classList.add("right");
+            b.textContent = (it.ans === "S" ? "✓ SHIELDED" : "✓ PUBLIC");
+            it.got = true;
+            save();
             playSfx("coin");
+            siblings.forEach((s) => {
+              if (s !== b) {
+                s.style.opacity = "0.35";
+                s.style.pointerEvents = "none";
+              }
+            });
           } else {
             playSfx("hit");
             b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
-            toast(it.ans === "S" ? "That one's shielded — look at the prefix." : "That one's transparent — t-prefixes are public.");
+            toast(it.ans === "S" ? "⚠️ Starts with u1 or zs1 — that is SHIELDED." : "⚠️ Starts with t1 or t3 — that is TRANSPARENT (PUBLIC).");
+            setTimeout(() => {
+              b.classList.remove("wrong");
+            }, 650);
           }
           if (items.every((x) => x.got)) {
             playSfx("shield");
@@ -1498,13 +1627,16 @@
               <p id="g-over-desc">Dodge red surveillance beams and KYC drones. Toggle your zk-SNARK Shield to phase through unharmed! Collect ZEC to recharge your shield energy.</p>
               <div class="game-controls-help">
                 <span><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> MOVE</span>
-                <span><kbd>↑</kbd> / <kbd>W</kbd> JUMP</span>
+                <span><kbd>↑</kbd> / <kbd>W</kbd> DOUBLE JUMP (2X)</span>
                 <span><kbd>SPACE</kbd> / <kbd>S</kbd> zk-SNARK SHIELD</span>
                 <span><kbd>X</kbd> FIRE MEMO</span>
               </div>
-              <div class="actions" style="margin-top:0">
-                <button class="btn xl gold" id="g-start-btn">START RUNNING 🛡</button>
-                <a class="btn ghost sm hidden" id="g-tweet-btn" target="_blank" rel="noopener">Tweet Score on 𝕏</a>
+              <div class="actions" style="margin-top:0;display:flex;flex-direction:column;align-items:center;gap:10px;">
+                <button class="btn-zecathon-scanline claim-glow hidden" id="g-claim-btn">🛡️ CLAIM 0.0000 ZEC TO SHIELDED WALLET →</button>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                  <button class="btn xl gold" id="g-start-btn">START RUNNING 🛡</button>
+                  <a class="btn ghost sm hidden" id="g-tweet-btn" target="_blank" rel="noopener">Tweet Score on 𝕏</a>
+                </div>
               </div>
             </div>
           </div>
@@ -1555,6 +1687,11 @@
         let memos = 3;
         let dronesDestroyed = 0;
         let blocks = S.height;
+        let claimedReward = false;
+        let screenShake = 0;
+        let boss = null;
+        let bossSpawned = false;
+        const floatingTexts = [];
 
         // Physics & Player
         const groundY = 310;
@@ -1564,6 +1701,7 @@
           vx: 0, vy: 0,
           speed: 4.8,
           jumping: false,
+          jumpsRemaining: 2,
           facing: 1,
           bobTimer: 0,
           invulnerable: 0
@@ -1592,17 +1730,29 @@
           isShielded = false;
           memos = 3;
           dronesDestroyed = 0;
+          claimedReward = false;
+          screenShake = 0;
+          boss = null;
+          bossSpawned = false;
+          floatingTexts.length = 0;
           player.x = 100;
           player.y = groundY - 52;
           player.vx = 0;
           player.vy = 0;
           player.jumping = false;
+          player.jumpsRemaining = 2;
           obstacles.length = 0;
           collectibles.length = 0;
           projectiles.length = 0;
           particles.length = 0;
           $("#g-overlay").classList.add("hidden");
           $("#g-tweet-btn").classList.add("hidden");
+          const cb = $("#g-claim-btn");
+          if (cb) {
+            cb.classList.add("hidden");
+            cb.style.opacity = "1";
+            cb.style.pointerEvents = "auto";
+          }
           updateHUD();
           playSfx("coin");
         }
@@ -1700,16 +1850,36 @@
           }
         }
 
+        function doJump() {
+          if (player.jumpsRemaining > 0 && running && !gameOver) {
+            player.vy = player.jumpsRemaining === 2 ? -12.5 : -11.2;
+            player.jumping = true;
+            player.jumpsRemaining--;
+            playSfx("jump");
+            if (player.jumpsRemaining === 0) {
+              // Mid-air double jump thrust
+              for (let i = 0; i < 10; i++) {
+                particles.push({
+                  x: player.x + player.w / 2 + (Math.random() - .5) * 16,
+                  y: player.y + player.h,
+                  vx: (Math.random() - .5) * 5,
+                  vy: 2 + Math.random() * 3,
+                  life: 18,
+                  color: "#00ff88",
+                  text: "zk"
+                });
+              }
+              floatingTexts.push({ text: "DOUBLE JUMP!", x: player.x - 10, y: player.y - 12, vy: -1.2, life: 28, color: "#00ff88" });
+            }
+          }
+        }
+
         // Input listeners
         window.addEventListener("keydown", (e) => {
           if (e.code === "ArrowLeft" || e.code === "KeyA") keys.left = true;
           if (e.code === "ArrowRight" || e.code === "KeyD") keys.right = true;
           if (e.code === "ArrowUp" || e.code === "KeyW") {
-            if (!player.jumping && running) {
-              player.vy = -12.5;
-              player.jumping = true;
-              playSfx("jump");
-            }
+            doJump();
           }
           if (e.code === "Space" || e.code === "ArrowDown" || e.code === "KeyS") {
             e.preventDefault();
@@ -1734,13 +1904,7 @@
         };
         bindTouch("#tb-left", () => { keys.left = true; }, () => { keys.left = false; });
         bindTouch("#tb-right", () => { keys.right = true; }, () => { keys.right = false; });
-        bindTouch("#tb-jump", () => {
-          if (!player.jumping && running) {
-            player.vy = -12.5;
-            player.jumping = true;
-            playSfx("jump");
-          }
-        });
+        bindTouch("#tb-jump", () => doJump());
         bindTouch("#tb-shield", () => toggleShield());
         bindTouch("#tb-memo", () => fireMemo());
 
@@ -1777,10 +1941,67 @@
             player.y = groundY - player.h;
             player.vy = 0;
             player.jumping = false;
+            player.jumpsRemaining = 2;
           }
 
           player.bobTimer += 0.2 * dt;
           if (player.invulnerable > 0) player.invulnerable -= dt;
+          if (screenShake > 0) screenShake = Math.max(0, screenShake - 0.7 * dt);
+
+          // Update Floating Texts
+          for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            const ft = floatingTexts[i];
+            ft.y += ft.vy * dt;
+            ft.life -= dt;
+            if (ft.life <= 0) floatingTexts.splice(i, 1);
+          }
+
+          // Spawn Surveillance Overlord Boss at score >= 0.35
+          if (score >= 0.35 && !bossSpawned) {
+            bossSpawned = true;
+            boss = {
+              type: "boss",
+              x: 770,
+              y: groundY - 140,
+              w: 88,
+              h: 56,
+              hp: 6,
+              maxHp: 6,
+              vx: -1.3,
+              targetX: 580,
+              hoverOffset: 0,
+              shootTimer: 0
+            };
+            screenShake = 12;
+            toast("🚨 SURVEILLANCE OVERLORD INCOMING! Neutralize it with Memos [X]!", 3000);
+            floatingTexts.push({ text: "⚠️ BOSS OVERLORD APPROACHING!", x: 260, y: 130, vy: -0.4, life: 60, color: "#ff6b57" });
+          }
+
+          if (boss) {
+            boss.hoverOffset += 0.05 * dt;
+            boss.y = groundY - 140 + Math.sin(boss.hoverOffset) * 20;
+            if (boss.x > boss.targetX) {
+              boss.x += boss.vx * dt;
+            } else {
+              boss.x = boss.targetX + Math.sin(boss.hoverOffset * 0.7) * 22;
+            }
+
+            boss.shootTimer += dt;
+            if (boss.shootTimer >= 110) {
+              boss.shootTimer = 0;
+              obstacles.push({
+                type: "laser",
+                x: 760,
+                y: 0,
+                w: 32,
+                h: groundY,
+                vx: -4.5,
+                color: "rgba(255, 60, 40, 0.85)"
+              });
+              playSfx("hit");
+              floatingTexts.push({ text: "RADAR SWEEP!", x: boss.x - 10, y: boss.y - 12, vy: -0.8, life: 25, color: "#ff8e7f" });
+            }
+          }
 
           // Shield energy management
           if (isShielded) {
@@ -1814,6 +2035,47 @@
             p.x += p.vx * dt;
             if (p.x > 780) { projectiles.splice(i, 1); continue; }
 
+            // Check hit against boss
+            if (boss && checkCollision(p, boss)) {
+              playSfx("hit");
+              boss.hp--;
+              screenShake = 8;
+              floatingTexts.push({ text: `HIT! HP ${boss.hp}/${boss.maxHp}`, x: boss.x + 10, y: boss.y - 12, vy: -1.5, life: 25, color: "#00ff88" });
+              for (let k = 0; k < 8; k++) {
+                particles.push({
+                  x: p.x,
+                  y: p.y,
+                  vx: (Math.random() - .5) * 6,
+                  vy: (Math.random() - .5) * 6,
+                  life: 20,
+                  color: "#00ff88"
+                });
+              }
+              projectiles.splice(i, 1);
+              if (boss.hp <= 0) {
+                score += 0.25;
+                dronesDestroyed += 5;
+                screenShake = 18;
+                playSfx("coin");
+                playSfx("shield");
+                for (let k = 0; k < 30; k++) {
+                  particles.push({
+                    x: boss.x + Math.random() * boss.w,
+                    y: boss.y + Math.random() * boss.h,
+                    vx: (Math.random() - .5) * 12,
+                    vy: (Math.random() - .5) * 12,
+                    life: 40,
+                    color: Math.random() > .5 ? "#00ff88" : "#f4b728"
+                  });
+                }
+                floatingTexts.push({ text: "★ BOSS OVERLORD DESTROYED! +0.25 ZEC ★", x: 200, y: 150, vy: -0.5, life: 80, color: "#00ff88" });
+                toast("🏆 VICTORY: Surveillance Overlord de-anonymized! +0.25 ZEC Bounty!");
+                boss = null;
+                updateHUD();
+              }
+              continue;
+            }
+
             // Check hit against drones
             for (let j = obstacles.length - 1; j >= 0; j--) {
               const obs = obstacles[j];
@@ -1834,6 +2096,8 @@
                 projectiles.splice(i, 1);
                 score += 0.05;
                 dronesDestroyed++;
+                screenShake = 6;
+                floatingTexts.push({ text: "+0.05 ZEC", x: obs.x, y: obs.y - 10, vy: -1.2, life: 30, color: "#00ff88" });
                 toast("💥 Drone decrypted & neutralized! +0.05 ZEC", 1200);
                 updateHUD();
                 break;
@@ -1862,7 +2126,9 @@
                 // Takes damage!
                 health -= 25;
                 player.invulnerable = 40;
+                screenShake = 14;
                 playSfx("hit");
+                floatingTexts.push({ text: "-25% PRIVACY LEAK!", x: player.x, y: player.y - 14, vy: -1.5, life: 35, color: "#ff6b57" });
                 toast("⚠️ SPOTTED BY SURVEILLANCE! Privacy leaked (-25%)", 1800);
                 updateHUD();
                 if (health <= 0) {
@@ -1884,16 +2150,19 @@
                 score += 0.1;
                 shieldEnergy = Math.min(100, shieldEnergy + 30);
                 playSfx("coin");
+                floatingTexts.push({ text: "+0.10 ZEC", x: col.x, y: col.y - 10, vy: -1.4, life: 30, color: "#f4b728" });
               } else if (col.type === "memo") {
                 memos += 2;
                 score += 0.05;
                 playSfx("coin");
+                floatingTexts.push({ text: "+2 MEMOS!", x: col.x, y: col.y - 10, vy: -1.4, life: 30, color: "#5c7cb5" });
                 toast("✉️ +2 Encrypted Memos acquired!");
               } else if (col.type === "orchard") {
                 shieldEnergy = 100;
                 isShielded = true;
                 score += 0.25;
                 playSfx("shield");
+                floatingTexts.push({ text: "100% SHIELD / +0.25 ZEC", x: col.x, y: col.y - 10, vy: -1.4, life: 35, color: "#00ff88" });
                 toast("🌿 ORCHARD PRIVACY LEAF! 100% Shield Recharged!");
               }
               collectibles.splice(i, 1);
@@ -1927,6 +2196,7 @@
         function triggerGameOver() {
           gameOver = true;
           running = false;
+          screenShake = 12;
           playSfx("gameover");
           if (score > (S.gameHighScore || 0)) {
             S.gameHighScore = score;
@@ -1937,6 +2207,52 @@
           $("#g-start-btn").textContent = "PLAY AGAIN ↻";
           $("#g-overlay").classList.remove("hidden");
 
+          const claimBtn = $("#g-claim-btn");
+          if (claimBtn) {
+            if (score > 0) {
+              claimBtn.classList.remove("hidden");
+              claimBtn.textContent = `🛡️ CLAIM ${fmt(score)} ZEC TO SHIELDED WALLET →`;
+              claimBtn.style.opacity = "1";
+              claimBtn.style.pointerEvents = "auto";
+              claimBtn.onclick = () => {
+                if (claimedReward) return;
+                claimedReward = true;
+                S.s = (S.s || 0) + score;
+                S.txCount = (S.txCount || 0) + 1;
+                const tx = {
+                  id: rnd(16, "0123456789abcdef"),
+                  h: S.height + 1,
+                  kind: "shielded",
+                  from: "Shield Runner Game Arcade",
+                  to: S.ua || "◆ shielded pool",
+                  amt: score,
+                  mine: true,
+                  memo: "Arcade bounty deposited directly to shielded balance"
+                };
+                S.ledger.unshift(tx);
+                S.ledger = S.ledger.slice(0, 40);
+                S.activity.unshift({
+                  icon: "🎮",
+                  label: "Arcade Bounty Claim",
+                  amt: score,
+                  dir: "in",
+                  memo: "Shield Runner score credited into shielded pool"
+                });
+                save();
+                renderBal();
+                renderLedger(tx.id);
+                pulse("#bal-s");
+                playSfx("shield");
+                toast(`🎉 SUCCESS: +${fmt(score)} ZEC claimed into your Shielded Wallet balance! Check left rail!`);
+                claimBtn.textContent = `✓ CLAIMED +${fmt(score)} ZEC TO SHIELDED POOL!`;
+                claimBtn.style.opacity = "0.6";
+                claimBtn.style.pointerEvents = "none";
+              };
+            } else {
+              claimBtn.classList.add("hidden");
+            }
+          }
+
           const tweetBtn = $("#g-tweet-btn");
           const tweetText = `I survived the Mempool surveillance grid and scored ${fmt(score)} ZEC in SHIELD RUNNER playing as my custom 26×26 shielded identity! 🛡️⚡\n\n@zksnarks_ #ZECATHON $ZEC`;
           tweetBtn.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweetText) + "&url=" + encodeURIComponent("https://zksnarksgame.vercel.app/");
@@ -1945,6 +2261,14 @@
         }
 
         function renderGame() {
+          ctx.save();
+          // Screen Shake translation
+          if (screenShake > 0) {
+            const sx = (Math.random() - .5) * screenShake * 1.5;
+            const sy = (Math.random() - .5) * screenShake * 1.5;
+            ctx.translate(sx, sy);
+          }
+
           // Background clear
           ctx.fillStyle = "#0c0a08";
           ctx.fillRect(0, 0, 760, 380);
@@ -2042,6 +2366,35 @@
             }
           });
 
+          // Render Boss if present
+          if (boss) {
+            ctx.fillStyle = "#1e1014";
+            ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+            ctx.strokeStyle = "#ff3322";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(boss.x, boss.y, boss.w, boss.h);
+
+            // Boss red scanning eye
+            ctx.fillStyle = (Math.floor(performance.now() / 120) % 2 === 0) ? "#ff3322" : "#990000";
+            ctx.beginPath();
+            ctx.arc(boss.x + 16, boss.y + boss.h / 2, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Boss title
+            ctx.font = "bold 8px 'Silkscreen'";
+            ctx.fillStyle = "#ff6b57";
+            ctx.fillText("OVERLORD", boss.x + 30, boss.y + 18);
+
+            // Boss health bar
+            ctx.fillStyle = "#2a1010";
+            ctx.fillRect(boss.x, boss.y - 12, boss.w, 6);
+            ctx.fillStyle = "#ff3322";
+            ctx.fillRect(boss.x, boss.y - 12, boss.w * (boss.hp / boss.maxHp), 6);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(boss.x, boss.y - 12, boss.w, 6);
+          }
+
           // Render Collectibles
           collectibles.forEach((col) => {
             if (col.type === "coin") {
@@ -2095,6 +2448,17 @@
             }
           });
 
+          // Render Floating Combat Texts
+          floatingTexts.forEach((ft) => {
+            ctx.save();
+            ctx.font = "bold 11px 'Silkscreen'";
+            ctx.fillStyle = ft.color || "#00ff88";
+            ctx.shadowColor = ft.color || "#00ff88";
+            ctx.shadowBlur = 8;
+            ctx.fillText(ft.text, ft.x, ft.y);
+            ctx.restore();
+          });
+
           // Render Player Character
           ctx.save();
           if (player.invulnerable > 0 && Math.floor(player.invulnerable / 4) % 2 === 0) {
@@ -2136,6 +2500,8 @@
             ctx.fillRect(player.x, player.y, player.w, player.h);
           }
           ctx.restore();
+
+          ctx.restore(); // Restore screen shake
         }
       }
     };
