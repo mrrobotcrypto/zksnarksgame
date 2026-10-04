@@ -3,7 +3,9 @@
 
 > **Built for ZECATHON // 05 WILDCARD Bounty ($5,000 / $15,000 USD paid in $ZEC)**  
 > **Submission for [@zksnarks_](https://x.com/zksnarks_)**  
-> *"Take someone from zero to their first shielded transaction."*
+> *"Take someone from zero to their first shielded transaction."*  
+>  
+> 🌐 **Live Web App**: [https://zksnarksgame.vercel.app/](https://zksnarksgame.vercel.app/)
 
 ---
 

@@ -1285,7 +1285,7 @@
           go(D.chapters.findIndex((c) => c.id === "grad"));
         });
 
-        const shareUrl = "https://x.com/intent/tweet?text=" + encodeURIComponent("I just played ZERO→SHIELDED and unlocked SHIELD RUNNER! 🛡️⚡ Taking Zcash privacy somewhere unexpected.\n\n@zksnarks_ #ZECATHON $ZEC");
+        const shareUrl = "https://x.com/intent/tweet?text=" + encodeURIComponent("I just played ZERO→SHIELDED and unlocked SHIELD RUNNER! 🛡️⚡ Taking Zcash privacy somewhere unexpected.\n\n@zksnarks_ #ZECATHON $ZEC") + "&url=" + encodeURIComponent("https://zksnarksgame.vercel.app/");
         $("#share-game").href = shareUrl;
 
         // Initialize and Run the Canvas Game
@@ -1690,7 +1690,7 @@
 
           const tweetBtn = $("#g-tweet-btn");
           const tweetText = `I survived the Mempool surveillance grid and scored ${fmt(score)} ZEC in SHIELD RUNNER playing as my custom 26×26 shielded identity! 🛡️⚡\n\n@zksnarks_ #ZECATHON $ZEC`;
-          tweetBtn.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweetText);
+          tweetBtn.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweetText) + "&url=" + encodeURIComponent("https://zksnarksgame.vercel.app/");
           tweetBtn.textContent = "Tweet Score on 𝕏";
           tweetBtn.classList.remove("hidden");
         }
