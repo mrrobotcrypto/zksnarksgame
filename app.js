@@ -1624,19 +1624,50 @@
           <div class="canvas-holder">
             <canvas id="game-canvas" width="760" height="380"></canvas>
             <div class="game-overlay" id="g-overlay">
-              <h2 id="g-over-title">READY RUNNER?</h2>
-              <p id="g-over-desc">Dodge red surveillance beams and KYC drones. Toggle your zk-SNARK Shield to phase through unharmed! Collect ZEC to recharge your shield energy.</p>
-              <div class="game-controls-help">
-                <span><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> MOVE</span>
-                <span><kbd>↑</kbd> / <kbd>W</kbd> DOUBLE JUMP (2X)</span>
-                <span><kbd>SPACE</kbd> / <kbd>S</kbd> zk-SNARK SHIELD</span>
-                <span><kbd>X</kbd> FIRE MEMO</span>
-              </div>
-              <div class="actions" style="margin-top:0;display:flex;flex-direction:column;align-items:center;gap:10px;">
-                <button class="btn-zecathon-scanline claim-glow hidden" id="g-claim-btn">🛡️ CLAIM 0.0000 ZEC TO SHIELDED WALLET →</button>
-                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                  <button class="btn xl gold" id="g-start-btn">START RUNNING 🛡</button>
-                  <a class="btn ghost sm hidden" id="g-tweet-btn" target="_blank" rel="noopener">Tweet Score on 𝕏</a>
+              <div class="overlay-box">
+                <h2 id="g-over-title">READY RUNNER?</h2>
+                <p id="g-over-desc">Dodge red surveillance beams and KYC drones. Toggle your zk-SNARK Shield to phase through unharmed! Collect ZEC to recharge your shield energy.</p>
+
+                <!-- Game Over Score Summary Card (visible on game over) -->
+                <div class="game-over-stats hidden" id="g-over-stats">
+                  <div class="gos-item">
+                    <span class="gos-label">FINAL SCORE</span>
+                    <span class="gos-val gold" id="gos-score">0.0000 ZEC</span>
+                  </div>
+                  <div class="gos-sep"></div>
+                  <div class="gos-item">
+                    <span class="gos-label">DRONES NEUTRALIZED</span>
+                    <span class="gos-val" id="gos-drones">0</span>
+                  </div>
+                  <div class="gos-sep"></div>
+                  <div class="gos-item">
+                    <span class="gos-label">PERSONAL BEST</span>
+                    <span class="gos-val" id="gos-high">0.0000 ZEC</span>
+                  </div>
+                </div>
+
+                <!-- Controls Help (hidden on game over) -->
+                <div class="game-controls-help" id="g-controls-help">
+                  <span><kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd> MOVE</span>
+                  <span><kbd>↑</kbd> / <kbd>W</kbd> DOUBLE JUMP (2X)</span>
+                  <span><kbd>SPACE</kbd> / <kbd>S</kbd> zk-SNARK SHIELD</span>
+                  <span><kbd>X</kbd> FIRE MEMO</span>
+                </div>
+
+                <!-- Action Buttons Container -->
+                <div class="game-overlay-actions">
+                  <button class="btn-game-claim hidden" id="g-claim-btn" title="Deposit your earned in-game ZEC directly into your Shielded Wallet balance!">
+                    <span class="claim-icon">🛡️</span>
+                    <span class="claim-text" id="g-claim-text">CLAIM 0.0000 ZEC TO SHIELDED WALLET</span>
+                    <span class="claim-arrow">→</span>
+                  </button>
+
+                  <div class="game-secondary-actions">
+                    <button class="btn gold lg" id="g-start-btn">START RUNNING 🛡</button>
+                    <a class="btn-tweet-score hidden" id="g-tweet-btn" target="_blank" rel="noopener">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:5px"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>Tweet Score on 𝕏
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1747,7 +1778,9 @@
           projectiles.length = 0;
           particles.length = 0;
           $("#g-overlay").classList.add("hidden");
-          $("#g-tweet-btn").classList.add("hidden");
+          $("#g-tweet-btn")?.classList.add("hidden");
+          $("#g-controls-help")?.classList.remove("hidden");
+          $("#g-over-stats")?.classList.add("hidden");
           const cb = $("#g-claim-btn");
           if (cb) {
             cb.classList.add("hidden");
@@ -2204,49 +2237,46 @@
             localStorage.setItem("zero_shielded_high_score", String(score));
           }
           $("#g-over-title").textContent = "DE-ANONYMIZED!";
-          $("#g-over-desc").innerHTML = `Surveillance caught you! Final Score: <b>${fmt(score)} ZEC</b> · Drones Neutralized: <b>${dronesDestroyed}</b>.<br/>High Score: <b>${fmt(S.gameHighScore)} ZEC</b>`;
+          $("#g-over-desc").textContent = "Surveillance spotted your node! Claim your earned privacy reward to withdraw it into your shielded wallet.";
+          $("#g-controls-help")?.classList.add("hidden");
+          $("#g-over-stats")?.classList.remove("hidden");
+          if ($("#gos-score")) $("#gos-score").textContent = fmt(score) + " ZEC";
+          if ($("#gos-drones")) $("#gos-drones").textContent = dronesDestroyed;
+          if ($("#gos-high")) $("#gos-high").textContent = fmt(S.gameHighScore) + " ZEC";
           $("#g-start-btn").textContent = "PLAY AGAIN ↻";
           $("#g-overlay").classList.remove("hidden");
 
           const claimBtn = $("#g-claim-btn");
+          const claimText = $("#g-claim-text");
           if (claimBtn) {
             if (score > 0) {
               claimBtn.classList.remove("hidden");
-              claimBtn.textContent = `🛡️ CLAIM ${fmt(score)} ZEC TO SHIELDED WALLET →`;
+              if (claimText) claimText.textContent = `CLAIM ${fmt(score)} ZEC TO SHIELDED WALLET`;
               claimBtn.style.opacity = "1";
               claimBtn.style.pointerEvents = "auto";
               claimBtn.onclick = () => {
                 if (claimedReward) return;
                 claimedReward = true;
-                S.s = (S.s || 0) + score;
-                S.txCount = (S.txCount || 0) + 1;
-                const tx = {
-                  id: rnd(16, "0123456789abcdef"),
-                  h: S.height + 1,
-                  kind: "shielded",
-                  from: "Shield Runner Game Arcade",
-                  to: S.ua || "◆ shielded pool",
-                  amt: score,
-                  mine: true,
-                  memo: "Arcade bounty deposited directly to shielded balance"
-                };
-                S.ledger.unshift(tx);
-                S.ledger = S.ledger.slice(0, 40);
-                S.activity.unshift({
+                const claimAmt = Math.max(0.0001, Math.round(score * 1e4) / 1e4);
+                S.s = (S.s || 0) + claimAmt;
+                addActivity({
                   icon: "🎮",
-                  label: "Arcade Bounty Claim",
-                  amt: score,
+                  label: "Shield Runner Bounty",
+                  amt: claimAmt,
                   dir: "in",
-                  memo: "Shield Runner score credited into shielded pool"
+                  memo: "Arcade bounty deposited into shielded balance"
                 });
-                save();
-                renderBal();
-                renderLedger(tx.id);
-                pulse("#bal-s");
+                addTx({
+                  kind: "shielded",
+                  amt: claimAmt,
+                  mine: true,
+                  note: "Game Bounty Claim"
+                });
                 playSfx("shield");
-                toast(`🎉 SUCCESS: +${fmt(score)} ZEC claimed into your Shielded Wallet balance! Check left rail!`);
-                claimBtn.textContent = `✓ CLAIMED +${fmt(score)} ZEC TO SHIELDED POOL!`;
-                claimBtn.style.opacity = "0.6";
+                playSfx("coin");
+                toast(`🎉 REWARD CLAIMED: +${fmt(claimAmt)} ZEC deposited directly to your Shielded Wallet balance! Check left rail!`, 4000);
+                if (claimText) claimText.textContent = `✓ CLAIMED +${fmt(claimAmt)} ZEC TO WALLET!`;
+                claimBtn.style.opacity = "0.7";
                 claimBtn.style.pointerEvents = "none";
               };
             } else {
@@ -2255,10 +2285,11 @@
           }
 
           const tweetBtn = $("#g-tweet-btn");
-          const tweetText = `I survived the Mempool surveillance grid and scored ${fmt(score)} ZEC in SHIELD RUNNER playing as my custom 26×26 shielded identity! 🛡️⚡\n\n@zksnarks_ #ZECATHON $ZEC`;
-          tweetBtn.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweetText) + "&url=" + encodeURIComponent("https://zksnarksgame.vercel.app/");
-          tweetBtn.textContent = "Tweet Score on 𝕏";
-          tweetBtn.classList.remove("hidden");
+          if (tweetBtn) {
+            const tweetText = `I survived the Mempool surveillance grid and scored ${fmt(score)} ZEC in SHIELD RUNNER playing as my custom 26×26 shielded identity! 🛡️⚡\n\n@zksnarks_ #ZECATHON $ZEC`;
+            tweetBtn.href = "https://x.com/intent/tweet?text=" + encodeURIComponent(tweetText) + "&url=" + encodeURIComponent("https://zksnarksgame.vercel.app/");
+            tweetBtn.classList.remove("hidden");
+          }
         }
 
         function renderGame() {

@@ -653,20 +653,86 @@ textarea { resize: vertical; min-height: 70px; }
   width: 100%; height: 100%; display: block; image-rendering: pixelated;
 }
 .game-overlay {
-  position: absolute; inset: 0; background: rgba(15, 14, 12, .88);
-  backdrop-filter: blur(3px); display: flex; flex-direction: column;
+  position: absolute; inset: 0; background: rgba(12, 10, 8, .92);
+  backdrop-filter: blur(4px); display: flex; flex-direction: column;
   align-items: center; justify-content: center; text-align: center;
-  padding: 24px; z-index: 20; animation: rise .4s var(--ease);
+  padding: 20px; z-index: 20; animation: rise .35s var(--ease);
 }
 .game-overlay.hidden { display: none; }
-.game-overlay h2 { font-size: clamp(38px, 6vw, 76px); color: var(--gold); margin-bottom: 6px; }
-.game-overlay p { max-width: 520px; font-size: 14px; color: #d0c4b2; margin-bottom: 16px; }
+.overlay-box {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; width: 100%; max-width: 580px;
+}
+.game-overlay h2 { font-size: clamp(34px, 5.5vw, 68px); color: var(--gold); margin-bottom: 4px; line-height: 1; }
+.game-overlay p { max-width: 500px; font-size: 13.5px; color: #cfc4b2; margin-bottom: 14px; line-height: 1.5; }
+
+/* Game Over Stats Box */
+.game-over-stats {
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  background: rgba(18, 16, 14, 0.95); border: 1px solid #4a3e2e;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7);
+  padding: 8px 18px; margin-bottom: 16px; border-radius: 2px;
+}
+.gos-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.gos-label { font-family: var(--f-pixel); font-size: 8.5px; letter-spacing: .08em; color: #9c9182; }
+.gos-val { font-family: var(--f-poster); font-size: 24px; line-height: 1; color: #fff; letter-spacing: .02em; }
+.gos-val.gold { color: var(--gold); text-shadow: 0 0 10px rgba(244, 183, 40, 0.5); }
+.gos-sep { width: 1px; height: 26px; background: #3e3527; }
+
 .game-controls-help {
-  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px;
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px;
   font-family: var(--f-pixel); font-size: 10px; color: #a49a8b;
 }
 .game-controls-help kbd {
   background: var(--night-line); color: var(--gold); padding: 3px 8px; border: 1px solid #5a5148;
+}
+
+/* Action buttons layout */
+.game-overlay-actions {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;
+}
+.btn-game-claim {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: auto; max-width: 95%; padding: 12px 24px;
+  font-family: var(--f-pixel); font-size: 12.5px; letter-spacing: .08em; font-weight: 700;
+  text-transform: uppercase;
+  background: repeating-linear-gradient(
+    0deg,
+    #00ff88 0px,
+    #00ff88 2px,
+    #00cc6a 2px,
+    #00cc6a 4px
+  );
+  color: #031408;
+  border: 2px solid #00ff88;
+  box-shadow: 0 0 18px rgba(0, 255, 136, 0.5), 0 4px 14px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, filter .15s;
+  animation: claimPulse 1.8s infinite alternate;
+}
+.btn-game-claim:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 28px rgba(0, 255, 136, 0.85);
+  filter: brightness(1.1);
+}
+.btn-game-claim:active { transform: translateY(1px); }
+.btn-game-claim .claim-icon { font-size: 15px; }
+.btn-game-claim .claim-arrow { font-size: 14px; transition: transform .15s; }
+.btn-game-claim:hover .claim-arrow { transform: translateX(3px); }
+
+.game-secondary-actions {
+  display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;
+}
+.btn-tweet-score {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--f-pixel); font-size: 11px; letter-spacing: .06em;
+  padding: 10px 18px; background: #000; color: #fff;
+  border: 1.5px solid #5a5148; text-decoration: none; cursor: pointer;
+  transition: all .2s var(--ease); border-radius: 2px;
+}
+.btn-tweet-score:hover {
+  border-color: #1d9bf0; color: #1d9bf0; box-shadow: 0 0 14px rgba(29, 155, 240, 0.4);
+  transform: translateY(-1px);
 }
 
 /* on-screen touch controls for game */
