@@ -81,6 +81,20 @@
     <div class="modal-body" id="glossary-body"></div>
   </dialog>
 
+  <!-- ============ RESET CONFIRMATION MODAL ============ -->
+  <dialog class="modal confirm-modal" id="modal-reset">
+    <div class="win-title dark"><span>⚠️ CONFIRM RESET</span><button class="x" id="modal-reset-close" aria-label="Cancel reset">✕</button></div>
+    <div class="modal-body" style="padding:24px;text-align:center;">
+      <div style="font-size:38px;margin-bottom:8px;">⚠️</div>
+      <h3 style="font-family:var(--f-poster);font-size:30px;color:var(--red);margin-bottom:8px;letter-spacing:.02em;">RESET SIMULATION?</h3>
+      <p style="font-size:13px;color:#5a5148;margin-bottom:20px;line-height:1.6;">This will wipe your simulated wallet balance, keys, and transaction history. You will restart the journey from Chapter 00.</p>
+      <div class="actions" style="justify-content:center;gap:12px;margin:0;">
+        <button class="btn ghost sm" id="modal-reset-cancel">Cancel</button>
+        <button class="btn sm" id="modal-reset-confirm" style="background:var(--red);color:#fff;border-color:var(--red);">Yes, Wipe & Restart</button>
+      </div>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status"></div>
 
   <footer class="foot">

@@ -300,7 +300,10 @@
     AutoPilot.stop();
     if (!S.handle) S.handle = "CYPHER_RUNNER";
     if (!S.wallet) S.wallet = "zodl";
-    if (!S.seed || !S.seed.length) S.seed = D.bip39Seed.slice();
+    if (!S.seed || S.seed.length !== 24) {
+      const w = D.words;
+      S.seed = Array.from({ length: 24 }, () => w[Math.floor(Math.random() * w.length)]);
+    }
     if (!S.ua) S.ua = "u1" + rnd(139, B32);
     if (!S.taddr) S.taddr = "t1" + rnd(33, B58);
     S.t = 0;
@@ -617,6 +620,15 @@
   /* 02 — WALLET SETUP */
   CH.wallet = () => {
     const sub = S.sub.wallet || (S.sub.wallet = {});
+    // Guarantee that seed words are ALWAYS present and properly generated
+    if (!S.seed || S.seed.length !== 24) {
+      const w = D.words;
+      S.seed = Array.from({ length: 24 }, () => w[Math.floor(Math.random() * w.length)]);
+      if (!S.birthday) S.birthday = S.height;
+      if (!S.ua) S.ua = genUA();
+      if (!S.taddr) S.taddr = genT();
+      save();
+    }
     const steps = [
       "Choose a shielded-first wallet below (e.g. Zodl)",
       "Press & hold the seed box to reveal 24 words",
@@ -2128,19 +2140,37 @@
     bindNav(); renderMap(); renderRail();
     document.title = (S.ch ? D.chapters[S.ch].title + " · " : "") + "ZERO → SHIELDED";
   }
-  function reset() {
+  const resetModal = $("#modal-reset");
+  function showResetModal() {
     AutoPilot.stop();
-    if (!confirm("Restart the journey? Your simulated wallet will be wiped.")) return;
-    localStorage.removeItem(KEY); S = fresh(); render();
+    if (resetModal && resetModal.showModal) {
+      resetModal.showModal();
+    } else {
+      doReset();
+    }
   }
 
-  /* glossary & nav */
+  function doReset() {
+    if (resetModal && resetModal.open) resetModal.close();
+    localStorage.removeItem(KEY);
+    S = fresh();
+    render();
+    toast("↻ Journey reset to zero. Start fresh!");
+  }
+
+  /* glossary, reset modal & nav */
   $("#glossary-body").innerHTML = `<dl class="gloss">${D.glossary.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join("")}</dl>`;
   $("#btn-glossary").addEventListener("click", () => $("#glossary").showModal());
   $("#glossary-close").addEventListener("click", () => $("#glossary").close());
   $("#glossary").addEventListener("click", (e) => { if (e.target.id === "glossary") $("#glossary").close(); });
+
+  $("#modal-reset-close")?.addEventListener("click", () => resetModal && resetModal.close());
+  $("#modal-reset-cancel")?.addEventListener("click", () => resetModal && resetModal.close());
+  $("#modal-reset-confirm")?.addEventListener("click", doReset);
+  $("#modal-reset")?.addEventListener("click", (e) => { if (e.target.id === "modal-reset" && resetModal) resetModal.close(); });
+
   $("#btn-home").addEventListener("click", () => { AutoPilot.stop(); go(0); });
-  $("#btn-reset").addEventListener("click", reset);
+  $("#btn-reset").addEventListener("click", showResetModal);
   $("#btn-quick-game-nav")?.addEventListener("click", () => quickJumpToArcade());
 
   window.addEventListener("keydown", (e) => {

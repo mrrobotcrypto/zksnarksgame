@@ -250,14 +250,16 @@ textarea { resize: vertical; min-height: 70px; }
 .badge { display: inline-block; font-family: var(--f-pixel); font-size: 9px; padding: 1px 6px; border: 1px solid currentColor; margin-right: 4px; margin-top: 6px; }
 
 /* seed */
-.seed-wrap { position: relative; }
-.seed-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 16px; background: var(--night); border: 2px solid var(--ink); transition: filter .3s; }
+.seed-wrap { position: relative; min-height: 200px; }
+.seed-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 16px; background: var(--night); border: 2px solid var(--ink); transition: filter .3s; min-height: 200px; }
 .seed-grid.blurred { filter: blur(9px); }
 .seed-word { font-size: 13px; color: var(--paper); padding: 6px 8px; border: 1px solid var(--night-line); display: flex; gap: 8px; }
 .seed-word i { font-style: normal; color: #7d7466; min-width: 18px; }
 .seed-cover {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   color: var(--paper); font-family: var(--f-pixel); letter-spacing: .1em; font-size: 12px; text-align: center; user-select: none; cursor: pointer;
+  background: rgba(20, 18, 16, 0.85);
+  min-height: 200px;
 }
 .seed-cover .hold { font-family: var(--f-poster); font-size: 28px; color: var(--gold); letter-spacing: .04em; }
 .seed-cover.gone { display: none; }
@@ -393,6 +395,7 @@ textarea { resize: vertical; min-height: 70px; }
 
 /* modal & toast */
 .modal { margin: auto; border: 2px solid var(--ink); box-shadow: var(--shadow); background: var(--paper); max-width: 680px; width: 92vw; max-height: 82vh; color: var(--ink); }
+.modal.confirm-modal { max-width: 460px; }
 .modal::backdrop { background: rgba(15, 14, 12, .6); backdrop-filter: blur(2px); }
 .modal-body { padding: 18px; overflow: auto; max-height: calc(82vh - 40px); }
 .gloss dt { font-family: var(--f-poster); font-size: 20px; letter-spacing: .03em; margin-top: 14px; }
