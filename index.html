@@ -64,6 +64,9 @@
           <div class="hint" id="device-hint">Create a wallet to begin.</div>
           <div class="mini-label">ACTIVITY · ONLY YOU SEE THIS</div>
           <ul class="activity" id="activity"><li class="empty">— nothing yet —</li></ul>
+          <div class="rail-wallet-actions">
+            <button class="btn-wallet-action" id="btn-open-wallet-modal" title="Open Shielded Wallet — Send, Receive or Withdraw ZEC">🛡 SEND / WITHDRAW</button>
+          </div>
         </div>
       </div>
 
@@ -113,6 +116,15 @@
         <button class="btn sm" id="modal-reset-confirm" style="background:var(--red);color:#fff;border-color:var(--red);">Yes, Wipe & Restart</button>
       </div>
     </div>
+  </dialog>
+
+  <!-- ============ SHIELDED WALLET MODAL ============ -->
+  <dialog class="modal wallet-modal" id="modal-wallet" aria-label="Shielded Wallet">
+    <div class="win-title gold">
+      <span>🛡 SHIELDED WALLET · ZOD SIM</span>
+      <button class="x" id="modal-wallet-close" style="color:var(--ink)" aria-label="Close wallet">✕</button>
+    </div>
+    <div class="modal-body" id="modal-wallet-body" style="padding:0;"></div>
   </dialog>
 
   <div class="toast" id="toast" role="status"></div>

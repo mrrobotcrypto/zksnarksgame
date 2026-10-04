@@ -433,7 +433,6 @@
     },
 
     stop(reason) {
-      if (!this.active) return;
       this.active = false;
       this.hideBanner();
       if (reason) toast("✋ " + reason, 2200);
@@ -450,14 +449,25 @@
           <button id="autopilot-stop-btn">✕ Take Manual Control</button>
         `;
         document.body.appendChild(b);
-        $("#autopilot-stop-btn")?.addEventListener("click", () => AutoPilot.stop("Manual control restored"));
       }
       b.style.display = "flex";
+      const stopBtn = $("#autopilot-stop-btn");
+      if (stopBtn) {
+        stopBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          AutoPilot.stop("Manual control restored");
+          AutoPilot.hideBanner();
+        };
+      }
     },
 
     hideBanner() {
       const b = $("#autopilot-banner");
-      if (b) b.style.display = "none";
+      if (b) {
+        b.style.display = "none";
+        b.remove();
+      }
     },
 
     async run() {
@@ -515,8 +525,9 @@
       // 03 — ADDRESS ANATOMY
       autoGo(3);
       if (!await stepWait(1400)) return;
+      const addrItems = (S.sub && S.sub.address && S.sub.address.items) || [];
       $$("#classify .classify-row").forEach((row) => {
-        const it = D.addresses ? D.addresses[+row.dataset.i] : null;
+        const it = addrItems[+row.dataset.i];
         if (it) {
           const btn = $(`[data-v="${it.ans}"]`, row);
           btn?.click();
@@ -571,18 +582,15 @@
       complete("unshield");
       if (!await stepWait(1600)) return;
 
-      // 08 — GRADUATION
+      // 08 — GRADUATION & SEAMLESS ARCADE LAUNCH
       autoGo(8);
-      if (!await stepWait(2200)) return;
+      if (!await stepWait(2000)) return;
       complete("grad");
       toast("🎓 Graduation complete! Launching Shield Runner arcade...", 2800);
-      if (!await stepWait(2200)) return;
+      if (!await stepWait(1800)) return;
 
       // 09 — LAUNCH ARCADE GAME
-      this.stop();
-      const gameIdx = D.chapters.findIndex((c) => c.id === "game");
-      autoGo(gameIdx >= 0 ? gameIdx : 9);
-      playSfx("shield");
+      quickJumpToArcade();
       toast("🎮 Welcome to SHIELD RUNNER! Arrow keys / Touch to play!", 4000);
     }
   };
@@ -1577,8 +1585,7 @@
 
         $("#launch-game").addEventListener("click", () => {
           playSfx("shield");
-          const gameIdx = D.chapters.findIndex((c) => c.id === "game");
-          if (gameIdx >= 0) go(gameIdx);
+          quickJumpToArcade();
         });
 
         complete("grad");
@@ -2607,6 +2614,290 @@
   $("#btn-home").addEventListener("click", () => { AutoPilot.stop(); go(0); });
   $("#btn-reset").addEventListener("click", showResetModal);
   $("#btn-quick-game-nav")?.addEventListener("click", () => quickJumpToArcade());
+
+  /* ============================================================
+     SHIELDED WALLET MODAL (FULL SEND, WITHDRAW & RECEIVE SUITE)
+     ============================================================ */
+  const walletModal = $("#modal-wallet");
+
+  function buildQR(seed) {
+    const h = seed.split("").reduce((a, c) => (Math.imul(31, a) + c.charCodeAt(0)) >>> 0, 0);
+    let cells = "";
+    for (let i = 0; i < 100; i++) {
+      const bit = ((h * (i + 1) * 2654435761) >>> 0) & 1;
+      cells += `<div class="wm-qr-cell ${bit ? "" : "light"}"></div>`;
+    }
+    return `<div class="wm-qr" aria-hidden="true">${cells}</div>`;
+  }
+
+  function openWalletModal(defaultTab = "receive") {
+    if (!walletModal) return;
+    const body = $("#modal-wallet-body");
+    if (!body) return;
+
+    const totalZec = (S.s + S.t).toFixed(4);
+    const sZec = S.s.toFixed(4);
+    const tZec = S.t.toFixed(4);
+    const uaAddr = S.ua || "u1sampleunifiedaddressfakekey8943729847192847192847192847";
+    const tAddr = S.taddr || "t1sampletransparentaddressfakekey8943729847";
+
+    body.innerHTML = `
+      <div class="wm-balance-hero">
+        <div class="wm-balance-label">TOTAL SIMULATED BALANCE</div>
+        <div class="wm-balance-val">${totalZec} <span>ZEC</span></div>
+        <div class="wm-balance-sub">
+          <span class="wm-pill s">🔒 SHIELDED: ${sZec} ZEC</span>
+          <span class="wm-pill t">👁 TRANSPARENT: ${tZec} ZEC</span>
+        </div>
+      </div>
+
+      <div class="wm-tabs">
+        <button class="wm-tab ${defaultTab === 'receive' ? 'active' : ''}" data-wmtab="receive">📥 RECEIVE</button>
+        <button class="wm-tab ${defaultTab === 'send' ? 'active' : ''}" data-wmtab="send">🔒 SEND (SHIELDED)</button>
+        <button class="wm-tab ${defaultTab === 'withdraw' ? 'active' : ''}" data-wmtab="withdraw">↗ WITHDRAW (UNSHIELD)</button>
+        <button class="wm-tab ${defaultTab === 'history' ? 'active' : ''}" data-wmtab="history">📜 HISTORY</button>
+      </div>
+
+      <!-- PANE: RECEIVE -->
+      <div class="wm-pane ${defaultTab === 'receive' ? 'active' : ''}" id="wm-pane-receive">
+        <div class="wm-addr-toggle">
+          <button class="wm-addr-btn active" id="btn-show-ua">🔒 Unified (Shielded, u1...)</button>
+          <button class="wm-addr-btn" id="btn-show-t">👁 Transparent (t1...)</button>
+        </div>
+        <div class="wm-address-block">
+          <div id="wm-qr-wrap">${buildQR(uaAddr)}</div>
+          <div style="font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px;" id="wm-addr-title">UNIFIED ADDRESS (Z-POOL)</div>
+          <div style="font-family:var(--f-mono);font-size:10px;color:#fff;word-break:break-all;line-height:1.5;margin-bottom:10px;" id="wm-addr-val">${uaAddr}</div>
+          <button class="btn sm gold" id="btn-copy-addr" style="font-size:11px;">📋 Copy Address</button>
+        </div>
+        <p style="font-size:11px;color:var(--text-dim);margin:0;line-height:1.4;">Shielded addresses hide your balance and transaction history with zk-SNARKs. Anyone can send to this address without seeing your wallet contents.</p>
+      </div>
+
+      <!-- PANE: SEND (SHIELDED) -->
+      <div class="wm-pane ${defaultTab === 'send' ? 'active' : ''}" id="wm-pane-send">
+        <div class="wm-privacy-bar">
+          <span style="font-size:16px;">🛡</span>
+          <div>
+            <strong>100% Zero-Knowledge Encrypted</strong><br>
+            <span>Sender, receiver, and amount remain completely hidden on the blockchain.</span>
+          </div>
+        </div>
+        <div class="wm-form">
+          <div class="wm-field">
+            <label>Recipient Address (z-address or u1...)</label>
+            <input type="text" id="wm-send-to" placeholder="u1... or zs1..." value="u1peer999xshieldednode2026zecathonmempoolzk">
+          </div>
+          <div class="wm-field">
+            <label>Amount (ZEC) · Available: ${sZec} ZEC</label>
+            <input type="number" id="wm-send-amt" placeholder="0.1" step="0.01" min="0.0001" max="${S.s}" value="0.5">
+          </div>
+          <div class="wm-field">
+            <label>Encrypted Memo (Optional, 512 bytes)</label>
+            <input type="text" id="wm-send-memo" placeholder="Thanks for running the shielded node!" value="Payment for node service #ZECATHON">
+          </div>
+          <div id="wm-send-review-box" style="display:none;" class="wm-review"></div>
+          <div class="actions" style="margin-top:12px;">
+            <button class="btn gold" id="wm-btn-send" style="width:100%;justify-content:center;">🔒 SEND SHIELDED ZEC</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE: WITHDRAW (UNSHIELD) -->
+      <div class="wm-pane ${defaultTab === 'withdraw' ? 'active' : ''}" id="wm-pane-withdraw">
+        <div class="wm-privacy-bar warn">
+          <span style="font-size:16px;">⚠️</span>
+          <div>
+            <strong>Unshielding Warning (De-anonymization)</strong><br>
+            <span>Withdrawing to a transparent address (t1...) makes the destination address and withdrawn amount visible to the entire world!</span>
+          </div>
+        </div>
+        <div class="wm-form">
+          <div class="wm-field">
+            <label>Presets / Quick Select</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn ghost sm wm-preset" data-to="${tAddr}">My t1 Address</button>
+              <button class="btn ghost sm wm-preset" data-to="t1SimExHotWallet999DepositNode">SimEx Exchange (Hot Wallet)</button>
+              <button class="btn ghost sm wm-preset" data-to="t1BinanceDepositDeskZECWildcard">Exchange t1 Desk</button>
+            </div>
+          </div>
+          <div class="wm-field">
+            <label>Withdraw to Transparent Address (t1...)</label>
+            <input type="text" id="wm-withdraw-to" placeholder="t1..." value="${tAddr}">
+          </div>
+          <div class="wm-field">
+            <label>Amount to Withdraw (ZEC) · Shielded Balance: ${sZec} ZEC</label>
+            <input type="number" id="wm-withdraw-amt" placeholder="0.25" step="0.01" min="0.0001" max="${S.s}" value="0.25">
+          </div>
+          <div id="wm-withdraw-review-box" style="display:none;" class="wm-review warn"></div>
+          <div class="actions" style="margin-top:12px;">
+            <button class="btn" id="wm-btn-withdraw" style="width:100%;justify-content:center;background:var(--red);color:#fff;border-color:var(--red);">↗ CONFIRM WITHDRAWAL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANE: HISTORY -->
+      <div class="wm-pane ${defaultTab === 'history' ? 'active' : ''}" id="wm-pane-history">
+        <div class="wm-history">
+          ${(S.activity && S.activity.length) ? S.activity.map(a => `
+            <div class="wm-history-item">
+              <span class="wm-history-icon">${a.icon || '📦'}</span>
+              <div class="wm-history-info">
+                <div class="wm-history-label">${a.label || 'Transaction'}</div>
+                ${a.memo ? `<div class="wm-history-memo">💬 "${a.memo}"</div>` : ''}
+              </div>
+              <div class="wm-history-amt ${a.dir === 'out' ? 'out' : 'in'}">${a.dir === 'out' ? '-' : '+'}${Number(a.amt || 0).toFixed(4)} ZEC</div>
+            </div>
+          `).join('') : '<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:12px;">No transactions recorded yet.</div>'}
+        </div>
+      </div>
+    `;
+
+    // Tab switching
+    body.querySelectorAll(".wm-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        playSfx("tab");
+        const t = tab.dataset.wmtab;
+        body.querySelectorAll(".wm-tab").forEach(x => x.classList.toggle("active", x === tab));
+        body.querySelectorAll(".wm-pane").forEach(p => p.classList.toggle("active", p.id === `wm-pane-${t}`));
+      });
+    });
+
+    // Receive address toggle
+    const btnUa = body.querySelector("#btn-show-ua");
+    const btnT = body.querySelector("#btn-show-t");
+    const qrWrap = body.querySelector("#wm-qr-wrap");
+    const addrTitle = body.querySelector("#wm-addr-title");
+    const addrVal = body.querySelector("#wm-addr-val");
+
+    if (btnUa && btnT) {
+      btnUa.addEventListener("click", () => {
+        playSfx("tab");
+        btnUa.classList.add("active");
+        btnT.classList.remove("active");
+        addrTitle.textContent = "UNIFIED ADDRESS (Z-POOL)";
+        addrTitle.style.color = "var(--gold)";
+        addrVal.textContent = uaAddr;
+        qrWrap.innerHTML = buildQR(uaAddr);
+      });
+      btnT.addEventListener("click", () => {
+        playSfx("tab");
+        btnT.classList.add("active");
+        btnUa.classList.remove("active");
+        addrTitle.textContent = "TRANSPARENT ADDRESS (T-POOL)";
+        addrTitle.style.color = "var(--red)";
+        addrVal.textContent = tAddr;
+        qrWrap.innerHTML = buildQR(tAddr);
+      });
+    }
+
+    body.querySelector("#btn-copy-addr")?.addEventListener("click", () => {
+      playSfx("coin");
+      if (navigator.clipboard) navigator.clipboard.writeText(addrVal.textContent);
+      toast("Address copied to clipboard!");
+    });
+
+    // Withdraw Presets
+    body.querySelectorAll(".wm-preset").forEach(btn => {
+      btn.addEventListener("click", () => {
+        playSfx("click");
+        const inp = body.querySelector("#wm-withdraw-to");
+        if (inp) inp.value = btn.dataset.to;
+      });
+    });
+
+    // Send Logic
+    let sendReviewing = false;
+    const btnSend = body.querySelector("#wm-btn-send");
+    const sendReviewBox = body.querySelector("#wm-send-review-box");
+    if (btnSend) {
+      btnSend.addEventListener("click", () => {
+        const to = body.querySelector("#wm-send-to")?.value.trim();
+        const amt = parseFloat(body.querySelector("#wm-send-amt")?.value || "0");
+        const memo = body.querySelector("#wm-send-memo")?.value.trim();
+        const FEE = 0.0001;
+
+        if (!to) { toast("Please enter a recipient address."); return; }
+        if (!amt || amt <= 0) { toast("Please enter a valid amount."); return; }
+        if (amt + FEE > S.s) { toast(`Insufficient shielded balance! Need ${(amt + FEE).toFixed(4)} ZEC (including fee).`); return; }
+
+        if (!sendReviewing) {
+          sendReviewing = true;
+          playSfx("click");
+          sendReviewBox.style.display = "block";
+          sendReviewBox.innerHTML = `
+            <div style="font-weight:700;margin-bottom:6px;color:var(--gold);">REVIEW SHIELDED TRANSFER:</div>
+            <div><strong>To:</strong> <span style="font-family:var(--f-mono);font-size:11px;">${short(to, 16)}</span></div>
+            <div><strong>Amount:</strong> ${amt.toFixed(4)} ZEC (+ 0.0001 fee)</div>
+            ${memo ? `<div><strong>Memo:</strong> 💬 ${memo}</div>` : ""}
+            <div style="margin-top:6px;font-size:11px;color:#a89f91;">Click below again to broadcast the zk-SNARK transaction to the network.</div>
+          `;
+          btnSend.textContent = "⚡ BROADCAST SHIELDED TRANSACTION";
+          return;
+        }
+
+        // Execute Send
+        playSfx("shield");
+        S.s = +(S.s - amt - FEE).toFixed(8);
+        addTx({ kind: "shielded", amt, mine: true });
+        addActivity({ icon: "🔒", label: `To ${short(to, 10)} (shielded)`, amt: +(amt + FEE).toFixed(4), dir: "out", memo });
+        save();
+        renderRail();
+        toast(`Sent ${amt.toFixed(4)} ZEC privately with zk-SNARKs!`);
+        openWalletModal("history");
+      });
+    }
+
+    // Withdraw Logic
+    let withdrawReviewing = false;
+    const btnWithdraw = body.querySelector("#wm-btn-withdraw");
+    const withdrawReviewBox = body.querySelector("#wm-withdraw-review-box");
+    if (btnWithdraw) {
+      btnWithdraw.addEventListener("click", () => {
+        const to = body.querySelector("#wm-withdraw-to")?.value.trim();
+        const amt = parseFloat(body.querySelector("#wm-withdraw-amt")?.value || "0");
+        const FEE = 0.0001;
+
+        if (!to) { toast("Please enter a transparent destination address."); return; }
+        if (!to.startsWith("t1") && !to.startsWith("tm")) { toast("Destination must be a transparent address (starts with t1...)"); return; }
+        if (!amt || amt <= 0) { toast("Please enter a valid amount to withdraw."); return; }
+        if (amt + FEE > S.s) { toast(`Insufficient shielded balance! Need ${(amt + FEE).toFixed(4)} ZEC.`); return; }
+
+        if (!withdrawReviewing) {
+          withdrawReviewing = true;
+          playSfx("alarm");
+          withdrawReviewBox.style.display = "block";
+          withdrawReviewBox.innerHTML = `
+            <div style="font-weight:700;margin-bottom:6px;color:var(--red);">⚠️ CONFIRM UNSHIELDING / WITHDRAWAL:</div>
+            <div><strong>Destination:</strong> <span style="font-family:var(--f-mono);font-size:11px;">${to}</span></div>
+            <div><strong>Withdrawing:</strong> ${amt.toFixed(4)} ZEC (+ 0.0001 miner fee)</div>
+            <div style="margin-top:6px;font-size:11px;color:#ff8e8e;line-height:1.4;">
+              Notice: This moves funds from your shielded pool to a public address. The Mempool scanner will detect this public balance.
+            </div>
+          `;
+          btnWithdraw.textContent = "⚠️ CONFIRM & BROADCAST UNSHIELD TX";
+          return;
+        }
+
+        // Execute Withdraw
+        playSfx("error");
+        S.s = +(S.s - amt - FEE).toFixed(8);
+        S.t = +(S.t + amt).toFixed(8);
+        addTx({ kind: "unshield", to, amt, mine: true });
+        addActivity({ icon: "↗", label: `Withdraw to ${short(to, 10)}`, amt: +(amt + FEE).toFixed(4), dir: "out" });
+        save();
+        renderRail();
+        toast(`Withdrew ${amt.toFixed(4)} ZEC to transparent address!`);
+        openWalletModal("history");
+      });
+    }
+
+    walletModal.showModal();
+  }
+
+
+  $("#btn-open-wallet-modal")?.addEventListener("click", () => openWalletModal("receive"));
+  $("#modal-wallet-close")?.addEventListener("click", () => walletModal?.close());
+  $("#modal-wallet")?.addEventListener("click", (e) => { if (e.target.id === "modal-wallet") walletModal?.close(); });
 
   window.addEventListener("keydown", (e) => {
     if (AutoPilot.active && e.key === "Escape") AutoPilot.stop("Manual takeover via Escape");
