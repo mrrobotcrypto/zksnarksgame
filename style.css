@@ -313,19 +313,28 @@ input[type="text"], input[type="number"], textarea, select {
 input:focus, textarea:focus, select:focus { box-shadow: 3px 3px 0 var(--gold); }
 textarea { resize: vertical; min-height: 70px; }
 
-/* hero */
-.hero { position: relative; padding: 10px 0 0; }
+/* hero - compact & fold-friendly */
+.hero { position: relative; padding: 0; }
+.hero h1 {
+  font-size: clamp(38px, 6.2vw, 80px);
+  line-height: 0.92;
+  margin-bottom: 6px;
+}
 .hero h1 .line { display: block; }
 .hero h1 .gold-ink { color: var(--ink); -webkit-text-stroke: 0; position: relative; display: inline-block; }
 .hero h1 .gold-ink::after { content: ""; position: absolute; left: -2%; right: -2%; bottom: 10%; height: 26%; background: var(--gold); z-index: -1; transform: skew(-6deg); }
 .stamp {
-  position: absolute; right: 0; top: 0; transform: rotate(8deg);
-  border: 3px solid var(--red); color: var(--red); padding: 8px 12px;
-  font-family: var(--f-pixel); font-size: 12px; letter-spacing: .1em; text-align: center; opacity: .85;
+  position: absolute; right: 0; top: -4px; transform: rotate(6deg);
+  border: 2px solid var(--red); color: var(--red); padding: 4px 8px;
+  font-family: var(--f-pixel); font-size: 9px; letter-spacing: .08em; text-align: center; opacity: .88;
 }
-.stamp b { display: block; font-family: var(--f-poster); font-size: 26px; font-weight: 400; letter-spacing: .04em; }
-.tagline { font-size: 14px; letter-spacing: .12em; text-transform: uppercase; margin: 14px 0 26px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.stamp b { display: block; font-family: var(--f-poster); font-size: 19px; font-weight: 400; letter-spacing: .03em; line-height: 1.05; }
+.hero .kicker { margin-bottom: 4px; font-size: 11px; }
+.tagline { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin: 6px 0 12px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .tagline span::before { content: "◆ "; color: var(--gold-deep); }
+.hero .lead { font-size: 14.5px; max-width: 60ch; margin-bottom: 12px; line-height: 1.5; }
+.hero .panel { margin-bottom: 14px; }
+.hero .panel-body { padding: 14px 16px; }
 
 .chapter-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 28px; }
 .chapter-card { border: 2px solid var(--ink); padding: 10px 12px; background: var(--paper-2); font-size: 12px; transition: transform .2s var(--ease), background .2s; }
@@ -946,6 +955,98 @@ textarea { resize: vertical; min-height: 70px; }
   text-shadow: 0 0 10px #00ff88;
   text-decoration: underline;
 }
+
+/* ---------------- PROMINENT ARCADE LAUNCHER BUTTONS ---------------- */
+.arcade-menu-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, #261f12 0%, #141210 100%);
+  border: 1.5px solid var(--gold) !important;
+  color: var(--gold) !important;
+  font-family: var(--f-pixel);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px !important;
+  letter-spacing: .08em;
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(244, 183, 40, 0.4), inset 0 0 6px rgba(244, 183, 40, 0.15);
+  position: relative;
+  cursor: pointer;
+  transition: all .2s var(--ease);
+  animation: arcadeBadgePulse 2.2s infinite ease-in-out;
+}
+.arcade-menu-badge:hover {
+  background: var(--gold) !important;
+  color: #000 !important;
+  box-shadow: 0 0 24px rgba(244, 183, 40, 0.85) !important;
+  transform: translateY(-1px) scale(1.04);
+}
+.arcade-pill {
+  background: var(--gold);
+  color: #000;
+  font-size: 8.5px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  animation: pillGlow 1.8s infinite alternate;
+}
+.arcade-menu-badge:hover .arcade-pill {
+  background: #000;
+  color: var(--gold);
+}
+@keyframes arcadeBadgePulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(244, 183, 40, 0.35);
+    border-color: var(--gold);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(244, 183, 40, 0.75), 0 0 25px rgba(0, 255, 136, 0.3);
+    border-color: #ffe066;
+  }
+}
+@keyframes pillGlow {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; filter: drop-shadow(0 0 4px #fff); }
+}
+
+.btn-arcade-spotlight {
+  background: linear-gradient(135deg, #221a0f 0%, #12100d 100%) !important;
+  color: var(--gold) !important;
+  border: 1.5px solid var(--gold) !important;
+  font-family: var(--f-pixel);
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(244, 183, 40, 0.35);
+  animation: arcadeBadgePulse 2.4s infinite ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all .2s var(--ease);
+}
+.btn-arcade-spotlight:hover {
+  background: var(--gold) !important;
+  color: #000 !important;
+  box-shadow: 0 0 22px rgba(244, 183, 40, 0.85) !important;
+  transform: translateY(-2px);
+}
+
+.chapter-card-arcade {
+  background: #181511 !important;
+  color: var(--gold) !important;
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 10px rgba(244, 183, 40, 0.25);
+  transition: all .2s var(--ease);
+}
+.chapter-card-arcade:hover {
+  background: var(--gold) !important;
+  color: #000 !important;
+  box-shadow: 0 0 20px rgba(244, 183, 40, 0.8) !important;
+  transform: translateY(-3px) scale(1.02);
+}
+
 
 
 

@@ -616,12 +616,12 @@
             </div>
             <div class="quick-launch-grid">
               <button class="btn ghost sm" id="btn-autopilot" title="Sit back and watch the autonomous onboarding walkthrough">⚡ Auto-Pilot Demo (40s)</button>
-              <button class="btn sm" id="btn-quick-game" style="background:#141210;color:var(--gold);border:1px solid var(--gold)" title="Jump directly to the Shield Runner arcade game">🎮 Quick Play Arcade →</button>
+              <button class="btn sm btn-arcade-spotlight" id="btn-quick-game" title="Jump directly to the Shield Runner arcade game">🎮 PLAY ARCADE GAME ★</button>
             </div>
           </div></div>
         <div class="chapter-list">
           ${D.chapters.slice(1, -1).map((c, i) => `<div class="chapter-card"><div class="n">${String(i + 1).padStart(2, "0")}</div><div class="t">${c.title.toUpperCase()}</div></div>`).join("")}
-          <div class="chapter-card" style="border-color:var(--gold);"><div class="n">🎮</div><div class="t">SHIELD RUNNER (GAME)</div></div>
+          <div class="chapter-card chapter-card-arcade" id="card-quick-game" style="cursor:pointer;" title="Jump straight into Shield Runner arcade game!"><div class="n">🎮</div><div class="t">SHIELD RUNNER (ARCADE) ★</div></div>
         </div>
       </div>`,
       bind() {
@@ -641,6 +641,7 @@
         $("#resume-btn")?.addEventListener("click", () => go(S.maxCh));
         $("#btn-autopilot")?.addEventListener("click", () => AutoPilot.start());
         $("#btn-quick-game")?.addEventListener("click", () => quickJumpToArcade());
+        $("#card-quick-game")?.addEventListener("click", () => quickJumpToArcade());
       }
     };
   };
